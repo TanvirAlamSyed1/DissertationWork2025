@@ -9,8 +9,10 @@ import Pages.sideScreen
 class MainPage(tk.Frame):
     def __init__(self, parent, controller):
         tk.Frame.__init__(self, parent)
+        #Welcome label
         welcome_label = tk.Label(self, text="Welcome to the Melanoma Annotation Tool", font=("Arial", 24))
         welcome_label.pack(pady=50)
+        #Description
         description = "This tool allows you to annotate skin lesion images.\nYou can load a folder of images and use various annotation types."
         desc_label = tk.Label(self, text=description, font=("Arial", 14))
         desc_label.pack(pady=20)

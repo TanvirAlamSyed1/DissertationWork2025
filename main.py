@@ -2,8 +2,7 @@
 import tkinter as tk
 # Styling the GUI
 from tkinter import ttk
-from Pages.completionScreen import CompletionScreen
-from Pages.mainScreen import MainPage
+from Pages.welcomeScreen import MainPage
 from Pages.sideScreen import  SidePage
 # Allowing us to extend from the Tk class
 class testClass(tk.Tk):
@@ -25,7 +24,7 @@ class testClass(tk.Tk):
         # We will now create a dictionary of frames
         self.frames = {}
         # we'll create the frames themselves later but let's add the components to the dictionary.
-        for F in (MainPage, SidePage, CompletionScreen):
+        for F in (MainPage, SidePage):
             frame = F(container, self)
 
             # the windows class acts as the root window for the frames.
