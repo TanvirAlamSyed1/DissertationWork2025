@@ -2,19 +2,19 @@
 import tkinter as tk
 # Styling the GUI
 from tkinter import ttk
-from module.completionScreen import CompletionScreen
-from module.mainScreen import MainPage
-from module.sideScreen import  SidePage
+from Pages.completionScreen import CompletionScreen
+from Pages.mainScreen import MainPage
+from Pages.sideScreen import  SidePage
 # Allowing us to extend from the Tk class
 class testClass(tk.Tk):
     
     def __init__(self, *args, **kwargs):
         tk.Tk.__init__(self, *args, **kwargs)
         # Adding a title to the window
-        self.wm_title("Test Application")
+        self.wm_title("Annotation Tool")
 
         # creating a frame and assigning it to container
-        container = tk.Frame(self, height=400, width=600)
+        container = tk.Frame(self, height=800, width=600)
         # specifying the region where the frame is packed in root
         container.pack(side="top", fill="both", expand=True)
 
