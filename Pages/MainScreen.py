@@ -67,14 +67,25 @@ class MainPage(tk.Frame):
         self.annotation_listbox = tk.Listbox(right_sidebar, width=30, height=20)
         self.annotation_listbox.pack(padx=5, pady=5, fill=tk.BOTH, expand=True)
         
-        # Bottom toolbar
+       # Create the bottom toolbar
         bottom_toolbar = tk.Frame(self)
         bottom_toolbar.pack(side=tk.BOTTOM, fill=tk.X)
-        
+
+        # Create a frame to hold the buttons
+        button_frame = tk.Frame(bottom_toolbar)
+        button_frame.pack(expand=True)
+
         # Buttons at the bottom
-        buttons = ["Previous", "Next", "Save Annotations", "Undo Annotation", "Clear Annotations"]
-        for text in buttons:
-            tk.Button(bottom_toolbar, text=text, command=lambda t=text: self.button_click(t)).pack(side=tk.LEFT, padx=5, pady=5)
+        buttons = [
+            ("Previous", self.prev_image),
+            ("Next", self.next_image),
+            ("Save Annotations", self.save_annotation),
+            ("Undo Annotation", self.undo_annotation),
+            ("Clear Annotations", self.clear_annotation)
+        ]
+
+        for text, command in buttons:
+            tk.Button(button_frame, text=text, command=command).pack(side=tk.LEFT, padx=5, pady=5)
         
         # Switch window button
         switch_window_button = tk.Button(
@@ -121,4 +132,20 @@ class MainPage(tk.Frame):
     
     def change_annotation_type(self,event):
         print("hello world")
+    
+    def prev_image(self):
+        print("hello world")
+
+    def next_image(self):
+        print("hello world")
+    
+    def save_annotation(self):
+        print ("hello world")
+        
+    def clear_annotation(self):
+        print ("hello world")
+        
+    def undo_annotation(self):
+        print ("hello world")
+        
        
