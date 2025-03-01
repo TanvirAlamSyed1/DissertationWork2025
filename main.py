@@ -2,8 +2,8 @@
 import tkinter as tk
 # Styling the GUI
 from tkinter import ttk
-from Pages.welcomeScreen import MainPage
-from Pages.sideScreen import  SidePage
+from Pages.WelcomeScreen import WelcomePage
+from Pages.MainScreen import  MainPage
 # Allowing us to extend from the Tk class
 class testClass(tk.Tk):
     
@@ -24,7 +24,7 @@ class testClass(tk.Tk):
         # We will now create a dictionary of frames
         self.frames = {}
         # we'll create the frames themselves later but let's add the components to the dictionary.
-        for F in (MainPage, SidePage):
+        for F in (WelcomePage, MainPage):
             frame = F(container, self)
 
             # the windows class acts as the root window for the frames.
@@ -32,7 +32,7 @@ class testClass(tk.Tk):
             frame.grid(row=0, column=0, sticky="nsew")
 
         # Using a method to switch frames
-        self.show_frame(MainPage)
+        self.show_frame(WelcomePage)
     
     def show_frame(self, cont):
         frame = self.frames[cont]
