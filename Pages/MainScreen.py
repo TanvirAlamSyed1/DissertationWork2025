@@ -53,10 +53,16 @@ class MainPage(tk.Frame):
 
         zoom_out_button = tk.Button(left_toolbar, text="Zoom Out", command=self.zoom_out)
         zoom_out_button.pack(pady=5, padx=5, fill=tk.X)
-        # Canvas for drawing
-        self.canvas = tk.Canvas(main_content, bg="white")
-        self.canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         
+        # Add label entry field
+        label_frame = tk.Frame(left_toolbar)
+        label_frame.pack(pady=10, padx=5, fill=tk.X)
+
+        label_label = tk.Label(label_frame, text="Annotation Label:")
+        label_label.pack(side=tk.TOP, anchor='w')  # This places the label on top
+
+        self.label_entry = tk.Entry(label_frame)
+        self.label_entry.pack(side=tk.TOP, fill=tk.X, expand=True)  # This places the entry below the label
         # Right sidebar for displaying annotations
         right_sidebar = tk.Frame(main_content, bg='lightgray', width=250)
         right_sidebar.pack(side=tk.RIGHT, fill=tk.Y, padx=5, pady=5)
@@ -96,23 +102,92 @@ class MainPage(tk.Frame):
         )
         switch_window_button.pack(side=tk.RIGHT, padx=5, pady=5)
         
+         # Canvas for drawing
+        self.canvas = tk.Canvas(main_content, bg="white")
+        self.canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         # Bind canvas events
         self.canvas.bind("<ButtonPress-1>", self.on_press)
         self.canvas.bind("<B1-Motion>", self.on_drag)
         self.canvas.bind("<ButtonRelease-1>", self.on_release)
 
     def on_press(self, event):
-        print("hello world")
-        
+        self.start_x = self.canvas.canvasx(event.x)
+        self.start_y = self.canvas.canvasy(event.y)
+        if self.current_annotation_type == "Freehand":
+            self.current_annotation = self.canvas.create_line(
+                self.start_x, self.start_y, self.start_x, self.start_y,
+                fill="red", width=2, tags="annotation"
+            )
+
     def on_drag(self, event):
-       print("hello world")
+        cur_x = self.canvas.canvasx(event.x)
+        cur_y = self.canvas.canvasy(event.y)
+        
+        if self.current_annotation_type == "Rectangle":
+            self.canvas.delete("temp_annotation")
+            self.current_annotation = self.canvas.create_rectangle(
+                self.start_x, self.start_y, cur_x, cur_y,
+                outline="red", tags="temp_annotation"
+            )
+        elif self.current_annotation_type == "Circle":
+            self.canvas.delete("temp_annotation")
+            radius = ((cur_x - self.start_x) ** 2 + (cur_y - self.start_y) ** 2) ** 0.5
+            self.current_annotation = self.canvas.create_oval(
+                self.start_x - radius, self.start_y - radius,
+                self.start_x + radius, self.start_y + radius,
+                outline="red", tags="temp_annotation"
+            )
+        elif self.current_annotation_type == "Freehand":
+            self.canvas.coords(
+                self.current_annotation,
+                *self.canvas.coords(self.current_annotation),
+                cur_x, cur_y
+            )
 
     def on_release(self, event):
-        print("hello world")
-
-    def button_click(self, button_text):
-        print("hello world")
+        end_x = self.canvas.canvasx(event.x)
+        end_y = self.canvas.canvasy(event.y)
+        self.canvas.delete("temp_annotation")
         
+        if self.current_annotation_type == "Rectangle":
+            self.current_annotation = self.canvas.create_rectangle(
+                self.start_x, self.start_y, end_x, end_y,
+                outline="red", tags="annotation"
+            )
+        elif self.current_annotation_type == "Circle":
+            radius = ((end_x - self.start_x) ** 2 + (end_y - self.start_y) ** 2) ** 0.5
+            self.current_annotation = self.canvas.create_oval(
+                self.start_x - radius, self.start_y - radius,
+                self.start_x + radius, self.start_y + radius,
+                outline="red", tags="annotation"
+            )
+        
+        annotation_coords = self.canvas.coords(self.current_annotation)
+        self.annotations.append((self.current_annotation_type, annotation_coords))
+        self.update_annotation_listbox()
+
+    def update_annotation_listbox(self):
+        self.annotation_listbox.delete(0, tk.END)
+        for i, (ann_type, coords) in enumerate(self.annotations):
+            self.annotation_listbox.insert(tk.END, f"{i+1}. {ann_type}: {coords}")
+
+    def clear_annotation(self):
+        self.canvas.delete("annotation")
+        self.annotations.clear()
+        self.update_annotation_listbox()
+
+    def undo_annotation(self):
+        if self.annotations:
+            last_annotation = self.annotations.pop()
+            self.canvas.delete(self.canvas.find_withtag("annotation")[-1])
+            self.update_annotation_listbox()
+
+    def change_annotation_format(self, event):
+        self.current_annotation_format = self.annotation_format.get()
+
+    def change_annotation_type(self, event):
+        self.current_annotation_type = self.annotation_type.get()
+            
     def load_folder(self):
         self.input_folder = filedialog.askdirectory(title="Select Input Folder")
         if self.input_folder:
@@ -157,17 +232,5 @@ class MainPage(tk.Frame):
     
     def save_annotation(self):
         print ("hello world")
-        
-    def clear_annotation(self):
-        print ("hello world")
-        
-    def undo_annotation(self):
-        print ("hello world")
-        
-    def change_annotation_format(self,event):
-        print("hello world")
-    
-    def change_annotation_type(self,event):
-        print("hello world")
         
        

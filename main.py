@@ -13,7 +13,7 @@ class testClass(tk.Tk):
         self.wm_title("Annotation Tool")
 
         # creating a frame and assigning it to container
-        container = tk.Frame(self, height=800, width=600)
+        container = tk.Frame(self, height=1000, width=600)
         # specifying the region where the frame is packed in root
         container.pack(side="top", fill="both", expand=True)
 
