@@ -1,6 +1,7 @@
 import tkinter as tk
 from tkinter import ttk,filedialog
 from PIL import Image, ImageTk, ImageDraw
+import os
 import Pages.WelcomeScreen
 
 class MainPage(tk.Frame):
@@ -113,30 +114,45 @@ class MainPage(tk.Frame):
         print("hello world")
         
     def load_folder(self):
-        print("hello world")
-        
-    def zoom_in(self):
-        print("hello world")
-        
-    def zoom_out(self):
-        print("hello world")
+        self.input_folder = filedialog.askdirectory(title="Select Input Folder")
+        if self.input_folder:
+            self.output_folder = os.path.join(self.input_folder, "annotated_images")
+            os.makedirs(self.output_folder, exist_ok=True)
+            
+            self.image_files = [f for f in os.listdir(self.input_folder) if f.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', '.bmp'))]
+            if self.image_files:
+                self.current_image_index = 0
+                self.load_image()
+            else:
+                messagebox.showwarning("Warning", "No image files found in the selected folder.")
         
     def update_image(self):
         print("hello world")
        
-    def load_image(self, image_path):
-        print("hello world")
-    
-    def change_annotation_format(self,event):
-        print("hello world")
-    
-    def change_annotation_type(self,event):
-        print("hello world")
+    def load_image(self):
+         if 0 <= self.current_image_index < len(self.image_files):
+            image_path = os.path.join(self.input_folder, self.image_files[self.current_image_index])
+            self.image = Image.open(image_path)
+            self.photo = ImageTk.PhotoImage(self.image)
+            self.canvas.config(width=self.image.width, height=self.image.height)
+            self.canvas.create_image(0, 0, anchor=tk.NW, image=self.photo)
+            self.annotations = []
+            self.clear_annotations()
     
     def prev_image(self):
-        print("hello world")
+        if self.current_image_index > 0:
+            self.current_image_index -= 1
+            self.load_image()
 
     def next_image(self):
+        if self.current_image_index < len(self.image_files) - 1:
+            self.current_image_index += 1
+            self.load_image()
+    
+    def zoom_in(self):
+        print("hello world")
+        
+    def zoom_out(self):
         print("hello world")
     
     def save_annotation(self):
@@ -147,5 +163,11 @@ class MainPage(tk.Frame):
         
     def undo_annotation(self):
         print ("hello world")
+        
+    def change_annotation_format(self,event):
+        print("hello world")
+    
+    def change_annotation_type(self,event):
+        print("hello world")
         
        
