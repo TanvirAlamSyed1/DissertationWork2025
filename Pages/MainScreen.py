@@ -1,4 +1,5 @@
 import tkinter as tk
+import json
 from tkinter import ttk,filedialog
 from PIL import Image, ImageTk, ImageDraw
 import os
@@ -28,6 +29,9 @@ class MainPage(tk.Frame):
         #select the folder the user wants to annotate
         load_folder_button = tk.Button(left_toolbar, text="Load Folder", command=self.load_folder)
         load_folder_button.pack(pady=10, padx=5, fill=tk.X)
+        #Allow the user to save their current image annotation
+        save_annotation_button = tk.Button(left_toolbar, text="Save Annotation Of Current Image", command=self.save_annotation)
+        save_annotation_button.pack(pady=10, padx=5, fill=tk.X)
         
         # Annotation type combobox
         annotation_type_label = tk.Label(left_toolbar, text="Annotation Type:")
@@ -38,14 +42,8 @@ class MainPage(tk.Frame):
         self.annotation_type.bind("<<ComboboxSelected>>", self.change_annotation_type)
         self.current_annotation_type = "Rectangle"
         
-        # Annotation format combobox
-        annotation_format_label = tk.Label(left_toolbar, text="Annotation Format:")
-        annotation_format_label.pack(pady=(10, 5))
-        self.annotation_format = ttk.Combobox(left_toolbar, values=["YOLO", "COCO", "PASCAL VOC"])
-        self.annotation_format.set("YOLO")
-        self.annotation_format.pack(pady=(0, 10), padx=5, fill=tk.X)
-        self.annotation_format.bind("<<ComboboxSelected>>", self.change_annotation_format)
-        self.current_annotation_format = "YOLO"
+        download_annotation_button = tk.Button(left_toolbar, text="Download All Annotations", command=self.download_annotations)
+        download_annotation_button.pack(pady=10, padx=5, fill=tk.X)
         
         #zoom in and out functionality
         zoom_in_button = tk.Button(left_toolbar, text="Zoom In", command=self.zoom_in)
@@ -63,6 +61,10 @@ class MainPage(tk.Frame):
 
         self.label_entry = tk.Entry(label_frame)
         self.label_entry.pack(side=tk.TOP, fill=tk.X, expand=True)  # This places the entry below the label
+        
+        label_button = tk.Button(left_toolbar, text="add label to latest annotation", command=self.addlabel)
+        label_button.pack(pady=5, padx=5, fill=tk.X)
+        
         # Right sidebar for displaying annotations
         right_sidebar = tk.Frame(main_content, bg='lightgray', width=250)
         right_sidebar.pack(side=tk.RIGHT, fill=tk.Y, padx=5, pady=5)
@@ -212,7 +214,7 @@ class MainPage(tk.Frame):
             self.canvas.config(width=self.image.width, height=self.image.height)
             self.canvas.create_image(0, 0, anchor=tk.NW, image=self.photo)
             self.annotations = []
-            self.clear_annotations()
+            self.clear_annotation()
     
     def prev_image(self):
         if self.current_image_index > 0:
@@ -232,5 +234,8 @@ class MainPage(tk.Frame):
     
     def save_annotation(self):
         print ("hello world")
+        
+    def addlabel():
+        print("hello world")
         
        
