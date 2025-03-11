@@ -3,9 +3,7 @@ import tkinter as tk
 # Styling the GUI
 from tkinter import ttk
 #Importing the next page
-import Pages.MainScreen
-
-
+from Pages.MainScreen import MainPage
 class WelcomePage(tk.Frame):
     def __init__(self, parent, controller):
         tk.Frame.__init__(self, parent)
@@ -20,6 +18,6 @@ class WelcomePage(tk.Frame):
         switch_window_button = tk.Button(
             self,
             text="Go to the Main Page",
-            command=lambda: controller.show_frame(Pages.MainScreen.MainPage),
+            command=lambda: controller.show_frame(MainPage),
         )
         switch_window_button.pack(side="bottom")

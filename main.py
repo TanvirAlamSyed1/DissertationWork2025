@@ -3,10 +3,10 @@ import tkinter as tk
 # Styling the GUI
 from tkinter import ttk
 from Pages.WelcomeScreen import WelcomePage
-from Pages.MainScreen import  MainPage
+from Pages.MainScreen import MainPage
+
 # Allowing us to extend from the Tk class
 class testClass(tk.Tk):
-    
     def __init__(self, *args, **kwargs):
         tk.Tk.__init__(self, *args, **kwargs)
         # Adding a title to the window
@@ -26,7 +26,6 @@ class testClass(tk.Tk):
         # we'll create the frames themselves later but let's add the components to the dictionary.
         for F in (WelcomePage, MainPage):
             frame = F(container, self)
-
             # the windows class acts as the root window for the frames.
             self.frames[F] = frame
             frame.grid(row=0, column=0, sticky="nsew")
@@ -38,7 +37,7 @@ class testClass(tk.Tk):
         frame = self.frames[cont]
         # raises the current frame to the top
         frame.tkraise()
-        
+        print(f"Switched to frame: {cont.__name__}")  # Debug print
 
 if __name__ == "__main__":
     testObj = testClass()

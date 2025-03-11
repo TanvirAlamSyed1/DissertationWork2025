@@ -1,14 +1,13 @@
 import tkinter as tk
-import json
-from tkinter import ttk,filedialog
-from PIL import Image, ImageTk, ImageDraw
-import os
-import Pages.WelcomeScreen
-
+from tkinter import ttk
+from Utility import util_image_functions
+from Utility import util_annotation_function
+from Utility import util_button_functions
+from Utility import util_zoom_functions
 class MainPage(tk.Frame):
     def __init__(self, parent, controller):
         tk.Frame.__init__(self, parent)
-        
+        self.controller = controller  # Assign the controller to self.controller
         # Create a main content frame
         main_content = tk.Frame(self)
         main_content.pack(fill=tk.BOTH, expand=True)
@@ -21,6 +20,7 @@ class MainPage(tk.Frame):
         self.input_folder = ""
         self.output_folder = ""
         self.current_annotation = None
+        self.zoom_factor = 1.0
         
         # Left toolbar for annotation comboboxes
         left_toolbar = tk.Frame(main_content, bg='lightgray', width=200)
@@ -45,25 +45,9 @@ class MainPage(tk.Frame):
         download_annotation_button = tk.Button(left_toolbar, text="Download All Annotations", command=self.download_annotations)
         download_annotation_button.pack(pady=10, padx=5, fill=tk.X)
         
-        #zoom in and out functionality
-        zoom_in_button = tk.Button(left_toolbar, text="Zoom In", command=self.zoom_in)
-        zoom_in_button.pack(pady=5, padx=5, fill=tk.X)
-
-        zoom_out_button = tk.Button(left_toolbar, text="Zoom Out", command=self.zoom_out)
-        zoom_out_button.pack(pady=5, padx=5, fill=tk.X)
-        
         # Add label entry field
         label_frame = tk.Frame(left_toolbar)
         label_frame.pack(pady=10, padx=5, fill=tk.X)
-
-        label_label = tk.Label(label_frame, text="Annotation Label:")
-        label_label.pack(side=tk.TOP, anchor='w')  # This places the label on top
-
-        self.label_entry = tk.Entry(label_frame)
-        self.label_entry.pack(side=tk.TOP, fill=tk.X, expand=True)  # This places the entry below the label
-        
-        label_button = tk.Button(left_toolbar, text="add label to latest annotation", command=self.addlabel)
-        label_button.pack(pady=5, padx=5, fill=tk.X)
         
         # Right sidebar for displaying annotations
         right_sidebar = tk.Frame(main_content, bg='lightgray', width=250)
@@ -100,7 +84,7 @@ class MainPage(tk.Frame):
         switch_window_button = tk.Button(
             bottom_toolbar,
             text="Go to the Main Screen",
-            command=lambda: controller.show_frame(Pages.WelcomeScreen.WelcomePage),
+            command=self.switch_to_welcome_page,  # Ensure this is correct
         )
         switch_window_button.pack(side=tk.RIGHT, padx=5, pady=5)
         
@@ -111,131 +95,65 @@ class MainPage(tk.Frame):
         self.canvas.bind("<ButtonPress-1>", self.on_press)
         self.canvas.bind("<B1-Motion>", self.on_drag)
         self.canvas.bind("<ButtonRelease-1>", self.on_release)
-
+        # Add mouse wheel event binding for zooming
+        self.canvas.bind("<MouseWheel>", self.on_mouse_wheel)
+    
+    def switch_to_welcome_page(self):
+        print("Switch to Welcome Page button clicked")  # Debug print
+        try:
+            from Pages.WelcomeScreen import WelcomePage  # Lazy import
+            print("WelcomePage imported successfully")  # Debug print
+            self.controller.show_frame(WelcomePage)
+        except ImportError as e:
+            print(f"Error importing WelcomePage: {e}")  # Debug print
+        except AttributeError as e:
+            print(f"Error with controller or show_frame: {e}")  # Debug print
     def on_press(self, event):
-        self.start_x = self.canvas.canvasx(event.x)
-        self.start_y = self.canvas.canvasy(event.y)
-        if self.current_annotation_type == "Freehand":
-            self.current_annotation = self.canvas.create_line(
-                self.start_x, self.start_y, self.start_x, self.start_y,
-                fill="red", width=2, tags="annotation"
-            )
+        util_annotation_function.on_press(self, event)
 
     def on_drag(self, event):
-        cur_x = self.canvas.canvasx(event.x)
-        cur_y = self.canvas.canvasy(event.y)
-        
-        if self.current_annotation_type == "Rectangle":
-            self.canvas.delete("temp_annotation")
-            self.current_annotation = self.canvas.create_rectangle(
-                self.start_x, self.start_y, cur_x, cur_y,
-                outline="red", tags="temp_annotation"
-            )
-        elif self.current_annotation_type == "Circle":
-            self.canvas.delete("temp_annotation")
-            radius = ((cur_x - self.start_x) ** 2 + (cur_y - self.start_y) ** 2) ** 0.5
-            self.current_annotation = self.canvas.create_oval(
-                self.start_x - radius, self.start_y - radius,
-                self.start_x + radius, self.start_y + radius,
-                outline="red", tags="temp_annotation"
-            )
-        elif self.current_annotation_type == "Freehand":
-            self.canvas.coords(
-                self.current_annotation,
-                *self.canvas.coords(self.current_annotation),
-                cur_x, cur_y
-            )
+        util_annotation_function.on_drag(self,event)
 
     def on_release(self, event):
-        end_x = self.canvas.canvasx(event.x)
-        end_y = self.canvas.canvasy(event.y)
-        self.canvas.delete("temp_annotation")
-        
-        if self.current_annotation_type == "Rectangle":
-            self.current_annotation = self.canvas.create_rectangle(
-                self.start_x, self.start_y, end_x, end_y,
-                outline="red", tags="annotation"
-            )
-        elif self.current_annotation_type == "Circle":
-            radius = ((end_x - self.start_x) ** 2 + (end_y - self.start_y) ** 2) ** 0.5
-            self.current_annotation = self.canvas.create_oval(
-                self.start_x - radius, self.start_y - radius,
-                self.start_x + radius, self.start_y + radius,
-                outline="red", tags="annotation"
-            )
-        
-        annotation_coords = self.canvas.coords(self.current_annotation)
-        self.annotations.append((self.current_annotation_type, annotation_coords))
-        self.update_annotation_listbox()
+        util_annotation_function.on_release(self,event)
 
     def update_annotation_listbox(self):
-        self.annotation_listbox.delete(0, tk.END)
-        for i, (ann_type, coords) in enumerate(self.annotations):
-            self.annotation_listbox.insert(tk.END, f"{i+1}. {ann_type}: {coords}")
+        util_annotation_function.update_annotation_listbox(self)
 
     def clear_annotation(self):
-        self.canvas.delete("annotation")
-        self.annotations.clear()
-        self.update_annotation_listbox()
+        util_annotation_function.clear_annotation(self)
 
     def undo_annotation(self):
-        if self.annotations:
-            last_annotation = self.annotations.pop()
-            self.canvas.delete(self.canvas.find_withtag("annotation")[-1])
-            self.update_annotation_listbox()
+        util_annotation_function.undo_annotation(self)
 
-    def change_annotation_format(self, event):
-        self.current_annotation_format = self.annotation_format.get()
+    def change_annotation_type(self,event):
+        util_annotation_function.change_annotation_type(self,event)
 
-    def change_annotation_type(self, event):
-        self.current_annotation_type = self.annotation_type.get()
-            
     def load_folder(self):
-        self.input_folder = filedialog.askdirectory(title="Select Input Folder")
-        if self.input_folder:
-            self.output_folder = os.path.join(self.input_folder, "annotated_images")
-            os.makedirs(self.output_folder, exist_ok=True)
-            
-            self.image_files = [f for f in os.listdir(self.input_folder) if f.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', '.bmp'))]
-            if self.image_files:
-                self.current_image_index = 0
-                self.load_image()
-            else:
-                messagebox.showwarning("Warning", "No image files found in the selected folder.")
-        
-    def update_image(self):
-        print("hello world")
+        util_button_functions.load_folder(self)
        
     def load_image(self):
-         if 0 <= self.current_image_index < len(self.image_files):
-            image_path = os.path.join(self.input_folder, self.image_files[self.current_image_index])
-            self.image = Image.open(image_path)
-            self.photo = ImageTk.PhotoImage(self.image)
-            self.canvas.config(width=self.image.width, height=self.image.height)
-            self.canvas.create_image(0, 0, anchor=tk.NW, image=self.photo)
-            self.annotations = []
-            self.clear_annotation()
-    
+        util_image_functions.load_image(self)
+
     def prev_image(self):
-        if self.current_image_index > 0:
-            self.current_image_index -= 1
-            self.load_image()
+        util_image_functions.prev_image(self)
 
     def next_image(self):
-        if self.current_image_index < len(self.image_files) - 1:
-            self.current_image_index += 1
-            self.load_image()
+        util_image_functions.next_image(self)
     
-    def zoom_in(self):
-        print("hello world")
+    def on_mouse_wheel(self,event):
+        util_zoom_functions.on_mouse_wheel(self,event)
+    
+    def update_image_size(self, mouse_x, mouse_y,x_fraction, y_fraction):
+        util_zoom_functions.update_image_size(self, mouse_x, mouse_y,x_fraction, y_fraction)
         
-    def zoom_out(self):
-        print("hello world")
+    def download_annotations(self):
+        util_button_functions.download_annotations(self)
     
     def save_annotation(self):
         print ("hello world")
         
-    def addlabel():
+    def addlabel(self):
         print("hello world")
         
        
