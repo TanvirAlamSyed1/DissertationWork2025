@@ -1,3 +1,6 @@
-Pages/__pycache__/
+# Ignore __pycache__ folders
+__pycache__/
+
+# Ignore specific files
 tempCodeRunnerFile.py
 annotations.json
