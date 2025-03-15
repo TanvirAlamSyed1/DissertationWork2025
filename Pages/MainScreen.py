@@ -12,15 +12,16 @@ class MainPage(tk.Frame):
         main_content = tk.Frame(self)
         main_content.pack(fill=tk.BOTH, expand=True)
         
-        self.image = None
-        self.photo = None
-        self.annotations = []
-        self.image_files = []
+        self.image = None #this stores the file path
+        self.photo = None #this uploads the picture to the screen
+        self.annotations = [] #stores annotations
+        self.undone_annotations = []  # Stores undone annotations for redo
+        self.image_files = [] #loads all files within the folder
         self.current_image_index = -1
-        self.input_folder = ""
-        self.output_folder = ""
+        self.input_folder = "" #serves as a storage location for the path to the directory selected by the user.
+        self.output_folder = "" #used to create a folder that all annotations can be saved into
         self.current_annotation = None
-        self.zoom_factor = 1.0
+        self.zoom_factor = 1.0 #zoom in and out
         
         # Left toolbar for annotation comboboxes
         left_toolbar = tk.Frame(main_content, bg='lightgray', width=200)
@@ -30,9 +31,12 @@ class MainPage(tk.Frame):
         load_folder_button = tk.Button(left_toolbar, text="Load Folder", command=self.load_folder)
         load_folder_button.pack(pady=10, padx=5, fill=tk.X)
         #Allow the user to save their current image annotation
-        save_annotation_button = tk.Button(left_toolbar, text="Save Annotation Of Current Image", command=self.save_annotation)
+        save_annotation_button = tk.Button(left_toolbar, text="Save Annotations Of Current Image", command=self.save_annotation)
         save_annotation_button.pack(pady=10, padx=5, fill=tk.X)
         
+        load_annotation_button = tk.Button(left_toolbar, text="Load Annotations Of Current Image", command=self.load_annotation)
+        load_annotation_button.pack(pady=10, padx=5, fill=tk.X)
+    
         # Annotation type combobox
         annotation_type_label = tk.Label(left_toolbar, text="Annotation Type:")
         annotation_type_label.pack(pady=(10, 5))
@@ -72,8 +76,8 @@ class MainPage(tk.Frame):
         buttons = [
             ("Previous", self.prev_image),
             ("Next", self.next_image),
-            ("Save Annotations", self.save_annotation),
             ("Undo Annotation", self.undo_annotation),
+            ("Redo Annotation", self.redo_annotation),
             ("Clear Annotations", self.clear_annotation)
         ]
 
@@ -108,7 +112,10 @@ class MainPage(tk.Frame):
             print(f"Error importing WelcomePage: {e}")  # Debug print
         except AttributeError as e:
             print(f"Error with controller or show_frame: {e}")  # Debug print
-    def on_press(self, event):
+            
+    #Here is where I've started splitting functions into seperate files in the utility folder, to keep code more clean
+            
+    def on_press(self, event): #this controlls what happens when you start annotating
         util_annotation_function.on_press(self, event)
 
     def on_drag(self, event):
@@ -125,6 +132,9 @@ class MainPage(tk.Frame):
 
     def undo_annotation(self):
         util_annotation_function.undo_annotation(self)
+    
+    def redo_annotation(self):
+        util_annotation_function.redo_annotation(self)
 
     def change_annotation_type(self,event):
         util_annotation_function.change_annotation_type(self,event)
@@ -137,6 +147,9 @@ class MainPage(tk.Frame):
 
     def prev_image(self):
         util_image_functions.prev_image(self)
+    
+    def load_annotation(self):
+        util_button_functions.load_annotations(self)
 
     def next_image(self):
         util_image_functions.next_image(self)
@@ -144,14 +157,20 @@ class MainPage(tk.Frame):
     def on_mouse_wheel(self,event):
         util_zoom_functions.on_mouse_wheel(self,event)
     
-    def update_image_size(self, mouse_x, mouse_y,x_fraction, y_fraction):
-        util_zoom_functions.update_image_size(self, mouse_x, mouse_y,x_fraction, y_fraction)
+    def update_image_size(self,focus_x, focus_y, scale_factor):
+        util_zoom_functions.update_image_size(self,focus_x, focus_y, scale_factor)
         
     def download_annotations(self):
         util_button_functions.download_annotations(self)
     
     def save_annotation(self):
-        print ("hello world")
+        util_button_functions.save_annotations(self)
+    
+    def redraw_annotations(self):
+        util_button_functions.redraw_annotations(self)
+    
+    def redraw_annotation(self, annotation, new_width, new_height):
+        util_zoom_functions.redraw_annotation(self, annotation, new_width, new_height)
         
     def addlabel(self):
         print("hello world")

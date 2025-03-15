@@ -1,128 +1,111 @@
-from PIL import Image, ImageTk, ImageDraw
+from PIL import Image, ImageTk
 import tkinter as tk
-from tkinter import ttk
-
-def zoom_in(self):
-    self.zoom_factor *= 1.1
-    self.update_image_size()
-
-def zoom_out(self):
-    self.zoom_factor = max(1.0, self.zoom_factor / 1.1)  # Prevent zooming out too much
-    self.update_image_size()
 
 def on_mouse_wheel(self, event):
-    # Get the mouse position relative to the canvas
+    """Handles zooming in and out while keeping the cursor at the same position."""
+
+    # Get mouse position relative to the canvas
     mouse_x = self.canvas.canvasx(event.x)
     mouse_y = self.canvas.canvasy(event.y)
 
-    # Get current scroll position as a fraction
-    x_fraction = self.canvas.xview()[0]
-    y_fraction = self.canvas.yview()[0]
+    # Get the bounding box of the image
+    bbox = self.canvas.bbox("image")
+    if not bbox:
+        return  # Prevents crashes if no image is loaded
+
+    # Calculate the focus point relative to the image size
+    focus_x = (mouse_x - bbox[0]) / (bbox[2] - bbox[0])
+    focus_y = (mouse_y - bbox[1]) / (bbox[3] - bbox[1])
 
     # Determine zoom direction
-    if event.delta > 0:  # Zoom in
-        scale_factor = 1.1
-    else:  # Zoom out
-        if self.zoom_factor <= 1.0:  # Prevent zooming out beyond original size
-            return
-        scale_factor = 1 / 1.1
+    zoom_in = event.delta > 0
+    scale_factor = 1.1 if zoom_in else (1 / 1.1)
 
-    # Apply zoom
+    # Prevent excessive zooming out
+    if not zoom_in and self.zoom_factor <= 1.0:
+        return
+
+    # Update zoom factor
     self.zoom_factor *= scale_factor
-    if self.zoom_factor < 1.0:  # Prevent zooming out too much
-        self.zoom_factor = 1.0
+    self.zoom_factor = max(self.zoom_factor, 1.0)  # Ensure it doesn't go below 1.0
 
-    self.update_image_size(mouse_x, mouse_y, x_fraction, y_fraction)
+    # Apply updated zoom
+    self.update_image_size(focus_x, focus_y, scale_factor)
 
-def update_image_size(self, mouse_x, mouse_y, x_fraction, y_fraction):
-    if self.image:
-        # Resize the image while ensuring it doesn’t shrink beyond original size
-        new_width = int(self.image.width * self.zoom_factor)
-        new_height = int(self.image.height * self.zoom_factor)
+def update_image_size(self, focus_x=None, focus_y=None, scale_factor=1.0):
+    """Resizes the image and adjusts annotations accordingly while maintaining zoom focus."""
 
-        resized_image = self.image.resize((new_width, new_height))
-        self.photo = ImageTk.PhotoImage(resized_image)
+    if not self.image:
+        return
 
-        # Set new scroll region
-        self.canvas.config(scrollregion=(0, 0, new_width, new_height))
+    # Get the current scroll position BEFORE zooming
+    x_scroll, y_scroll = self.canvas.xview(), self.canvas.yview()
 
-        # Adjust scroll position to keep the cursor in place
-        canvas_width = self.canvas.winfo_width()
-        canvas_height = self.canvas.winfo_height()
+    # Calculate new dimensions while preserving aspect ratio
+    new_width = int(self.image.width * self.zoom_factor)
+    new_height = int(self.image.height * self.zoom_factor)
+    resized_image = self.image.resize((new_width, new_height))
 
-        new_x_fraction = (mouse_x / new_width) - (canvas_width / (2 * new_width))
-        new_y_fraction = (mouse_y / new_height) - (canvas_height / (2 * new_height))
+    self.photo = ImageTk.PhotoImage(resized_image)
 
-        self.canvas.xview_moveto(new_x_fraction)
-        self.canvas.yview_moveto(new_y_fraction)
+    # Update canvas scroll region
+    self.canvas.config(scrollregion=(0, 0, new_width, new_height))
 
-        # Update canvas image
-        self.canvas.delete("image")
-        self.canvas.create_image(0, 0, anchor=tk.NW, image=self.photo, tags="image")
+    # Update canvas image
+    self.canvas.delete("image")
+    self.canvas.create_image(0, 0, anchor=tk.NW, image=self.photo, tags="image")
 
-def update_image_size(self, mouse_x=None, mouse_y=None, x_fraction=None, y_fraction=None):
-    if self.image:
-        # Resize the image while ensuring it doesn’t shrink beyond original size
-        new_width = int(self.image.width * self.zoom_factor)
-        new_height = int(self.image.height * self.zoom_factor)
+    # Adjust scrollbars to maintain focus on the cursor position
+    if focus_x is not None and focus_y is not None:
+        bbox = self.canvas.bbox("image")
+        if bbox:
+            # Compute the new scroll position to keep the cursor focus
+            new_x_scroll = focus_x * (bbox[2] - bbox[0]) - (self.canvas.winfo_width() / 2)
+            new_y_scroll = focus_y * (bbox[3] - bbox[1]) - (self.canvas.winfo_height() / 2)
 
-        resized_image = self.image.resize((new_width, new_height))
-        self.photo = ImageTk.PhotoImage(resized_image)
+            # Convert to valid scroll fraction (0-1 range)
+            self.canvas.xview_moveto(max(0, min(new_x_scroll / new_width, 1.0)))
+            self.canvas.yview_moveto(max(0, min(new_y_scroll / new_height, 1.0)))
 
-        # Set new scroll region
-        self.canvas.config(scrollregion=(0, 0, new_width, new_height))
+    # Clear old annotations and redraw them at new scaled positions
+    self.canvas.delete("annotation")
+    for annotation in self.annotations:
+        self.redraw_annotation(annotation, new_width, new_height)
 
-        # Adjust scroll position to keep the cursor in place if mouse_x and mouse_y are provided
-        if mouse_x is not None and mouse_y is not None:
-            canvas_width = self.canvas.winfo_width()
-            canvas_height = self.canvas.winfo_height()
+def redraw_annotation(self, annotation, new_width, new_height):
+    """Redraws annotations at the correct scaled positions."""
 
-            new_x_fraction = (mouse_x / new_width) - (canvas_width / (2 * new_width))
-            new_y_fraction = (mouse_y / new_height) - (canvas_height / (2 * new_height))
+    ann_type = annotation[0]
+    rel_coords = annotation[1]
 
-            self.canvas.xview_moveto(new_x_fraction)
-            self.canvas.yview_moveto(new_y_fraction)
-        elif x_fraction is not None and y_fraction is not None:
-            # Adjust scroll position based on provided fractions
-            self.canvas.xview_moveto(x_fraction)
-            self.canvas.yview_moveto(y_fraction)
+    if ann_type == "Rectangle":
+        scaled_coords = [
+            rel_coords[0] * new_width,
+            rel_coords[1] * new_height,
+            rel_coords[2] * new_width,
+            rel_coords[3] * new_height
+        ]
+        self.canvas.create_rectangle(*scaled_coords, outline="red", tags="annotation")
 
-        # Update canvas image
-        self.canvas.delete("image")
-        self.canvas.create_image(0, 0, anchor=tk.NW, image=self.photo, tags="image")
+    elif ann_type == "Circle":
+        center_x = rel_coords[0] * new_width
+        center_y = rel_coords[1] * new_height
+        radius = rel_coords[2] * new_width  # Use width scaling for radius
 
-        # Clear old annotations and redraw them at new scaled positions
-        self.canvas.delete("annotation")
-        for ann_type, ann_data in self.annotations:
-            if ann_type == "Rectangle":
-                rel_coords = ann_data
-                scaled_coords = [
-                    rel_coords[0] * new_width,
-                    rel_coords[1] * new_height,
-                    rel_coords[2] * new_width,
-                    rel_coords[3] * new_height
-                ]
-                self.canvas.create_rectangle(*scaled_coords, outline="red", tags="annotation")
-            elif ann_type == "Circle":
-                rel_coords = ann_data
-                scaled_coords = [
-                    rel_coords[0] * new_width,
-                    rel_coords[1] * new_height,
-                    rel_coords[2] * new_width,
-                    rel_coords[3] * new_height
-                ]
-                radius = ((scaled_coords[2] - scaled_coords[0]) ** 2 +
-                          (scaled_coords[3] - scaled_coords[1]) ** 2) ** 0.5
-                self.canvas.create_oval(
-                    scaled_coords[0] - radius, scaled_coords[1] - radius,
-                    scaled_coords[0] + radius, scaled_coords[1] + radius,
-                    outline="red", tags="annotation"
-                )
-            elif ann_type == "Freehand":
-                # Scale each point in the freehand drawing
-                points = ann_data
-                scaled_points = []
-                for i in range(0, len(points), 2):
-                    scaled_points.append(points[i] * new_width)
-                    scaled_points.append(points[i + 1] * new_height)
-                self.canvas.create_line(*scaled_points, fill="red", width=2, tags="annotation")
+        self.canvas.create_oval(
+            center_x - radius, center_y - radius,
+            center_x + radius, center_y + radius,
+            outline="red", tags="annotation"
+        )
+
+    elif ann_type == "Freehand":
+        if len(rel_coords) < 4:
+            return  
+
+        scaled_points = [
+            rel_coords[i] * new_width if i % 2 == 0 else rel_coords[i] * new_height
+            for i in range(len(rel_coords))
+        ]
+        self.canvas.create_line(*scaled_points, fill="red", width=2, tags="annotation")
+
+
