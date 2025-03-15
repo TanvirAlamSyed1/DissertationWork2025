@@ -101,6 +101,8 @@ class MainPage(tk.Frame):
         self.canvas.bind("<ButtonRelease-1>", self.on_release)
         # Add mouse wheel event binding for zooming
         self.canvas.bind("<MouseWheel>", self.on_mouse_wheel)
+        self.root.bind("<Control-z>", self.undo_annotation)
+        self.root.bind("<Control-y>", self.redo_annotation)
     
     def switch_to_welcome_page(self):
         print("Switch to Welcome Page button clicked")  # Debug print

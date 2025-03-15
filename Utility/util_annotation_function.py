@@ -22,20 +22,33 @@ def on_drag(self, event):
             self.start_x, self.start_y, cur_x, cur_y,
             outline="red", tags="temp_annotation"
         )
+
     elif self.current_annotation_type == "Circle":
         self.canvas.delete("temp_annotation")
-        radius = ((cur_x - self.start_x) ** 2 + (cur_y - self.start_y) ** 2) ** 0.5
+
+        # Ensure the circle grows from start to end position
+        x1, y1 = self.start_x, self.start_y
+        x2, y2 = cur_x, cur_y
+
+        # Calculate center and radius
+        center_x = (x1 + x2) / 2
+        center_y = (y1 + y2) / 2
+        radius = ((x2 - x1) ** 2 + (y2 - y1) ** 2) ** 0.5 / 2  # Euclidean distance / 2
+
         self.current_annotation = self.canvas.create_oval(
-            self.start_x - radius, self.start_y - radius,
-            self.start_x + radius, self.start_y + radius,
+            center_x - radius, center_y - radius,
+            center_x + radius, center_y + radius,
             outline="red", tags="temp_annotation"
         )
+
+
     elif self.current_annotation_type == "Freehand":
         self.canvas.coords(
             self.current_annotation,
             *self.canvas.coords(self.current_annotation),
             cur_x, cur_y
         )
+
 
 def on_release(self, event):
     """Finalizes an annotation when the mouse is released."""
@@ -47,6 +60,7 @@ def on_release(self, event):
 
     img_width = self.image.width
     img_height = self.image.height
+
     rel_coords = []
 
     if self.current_annotation_type == "Rectangle":
@@ -62,13 +76,21 @@ def on_release(self, event):
             ann_coords[3] / img_height
         ]
 
+        # ✅ Store rectangle annotation
+        self.annotations.append(("Rectangle", rel_coords))
+
     elif self.current_annotation_type == "Circle":
-        # Ensure correct center and radius
-        x1, y1, x2, y2 = self.start_x, self.start_y, end_x, end_y
+        self.canvas.delete("temp_annotation")
+
+        x1, y1 = self.start_x, self.start_y
+        x2, y2 = end_x, end_y
+
+        # Calculate center and radius
         center_x = (x1 + x2) / 2
         center_y = (y1 + y2) / 2
-        radius = ((x2 - x1) ** 2 + (y2 - y1) ** 2) ** 0.5 / 2
+        radius = ((x2 - x1) ** 2 + (y2 - y1) ** 2) ** 0.5 / 2  # Euclidean distance
 
+        # Draw the final circle
         self.current_annotation = self.canvas.create_oval(
             center_x - radius, center_y - radius,
             center_x + radius, center_y + radius,
@@ -76,10 +98,13 @@ def on_release(self, event):
         )
 
         rel_coords = [
-            center_x / img_width,  # Store center X relative to full width
-            center_y / img_height,  # Store center Y relative to full height
-            radius / img_width  # Store radius relative to width (avoiding min_dim issues)
+            center_x / self.image.width,
+            center_y / self.image.height,
+            radius / self.image.width  # Store radius relative to width
         ]
+
+        # ✅ Store circle annotation
+        self.annotations.append(("Circle", rel_coords))
 
     elif self.current_annotation_type == "Freehand":
         points = self.canvas.coords(self.current_annotation)
@@ -88,9 +113,10 @@ def on_release(self, event):
             for i in range(len(points))
         ]
 
-    if rel_coords:
-        self.annotations.append((self.current_annotation_type, rel_coords))
+        # ✅ Store freehand annotation
+        self.annotations.append(("Freehand", rel_coords))
 
+    # ✅ Update the listbox only once, after appending
     self.update_annotation_listbox()
 
 

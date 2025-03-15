@@ -59,21 +59,25 @@ def update_image_size(self, focus_x=None, focus_y=None, scale_factor=1.0):
     if focus_x is not None and focus_y is not None:
         bbox = self.canvas.bbox("image")
         if bbox:
-            # Compute the new scroll position to keep the cursor focus
+            # Compute new scroll position to keep the cursor focus
             new_x_scroll = focus_x * (bbox[2] - bbox[0]) - (self.canvas.winfo_width() / 2)
             new_y_scroll = focus_y * (bbox[3] - bbox[1]) - (self.canvas.winfo_height() / 2)
 
-            # Convert to valid scroll fraction (0-1 range)
-            self.canvas.xview_moveto(max(0, min(new_x_scroll / new_width, 1.0)))
-            self.canvas.yview_moveto(max(0, min(new_y_scroll / new_height, 1.0)))
+            # Convert to valid scroll fraction (0-1 range) with clamping
+            x_scroll = max(0, min(new_x_scroll / (bbox[2] - bbox[0]), 1.0))
+            y_scroll = max(0, min(new_y_scroll / (bbox[3] - bbox[1]), 1.0))
+
+            self.canvas.xview_moveto(x_scroll)
+            self.canvas.yview_moveto(y_scroll)
 
     # Clear old annotations and redraw them at new scaled positions
     self.canvas.delete("annotation")
     for annotation in self.annotations:
         self.redraw_annotation(annotation, new_width, new_height)
 
+
 def redraw_annotation(self, annotation, new_width, new_height):
-    """Redraws annotations at the correct scaled positions."""
+    """Redraws a single annotation at the correct scaled position."""
 
     ann_type = annotation[0]
     rel_coords = annotation[1]
@@ -90,7 +94,7 @@ def redraw_annotation(self, annotation, new_width, new_height):
     elif ann_type == "Circle":
         center_x = rel_coords[0] * new_width
         center_y = rel_coords[1] * new_height
-        radius = rel_coords[2] * new_width  # Use width scaling for radius
+        radius = rel_coords[2] * new_width  # Scale based on width
 
         self.canvas.create_oval(
             center_x - radius, center_y - radius,
@@ -107,5 +111,8 @@ def redraw_annotation(self, annotation, new_width, new_height):
             for i in range(len(rel_coords))
         ]
         self.canvas.create_line(*scaled_points, fill="red", width=2, tags="annotation")
+
+
+
 
 

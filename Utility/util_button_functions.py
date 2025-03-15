@@ -82,40 +82,20 @@ def load_annotations(self):
 
 
 def redraw_annotations(self):
-    """Redraws annotations using the current image size."""
+    """Redraws all annotations using the current image size."""
     self.canvas.delete("annotation")  # Clear old annotations
 
     current_width = self.image.width
     current_height = self.image.height
+    img_diagonal = (current_width**2 + current_height**2) ** 0.5  # Compute diagonal for scaling
 
-    for ann_type, rel_coords in self.annotations:
-        if ann_type == "Rectangle":
-            abs_coords = [
-                rel_coords[0] * current_width,  
-                rel_coords[1] * current_height,
-                rel_coords[2] * current_width,
-                rel_coords[3] * current_height
-            ]
-            self.canvas.create_rectangle(*abs_coords, outline="red", tags="annotation")
-
-        elif ann_type == "Circle":
-            center_x = rel_coords[0] * current_width
-            center_y = rel_coords[1] * current_height
-            radius = rel_coords[2] * current_width  # Using image width for uniform scaling
-
-            self.canvas.create_oval(
-                center_x - radius, center_y - radius,  
-                center_x + radius, center_y + radius,
-                outline="red", tags="annotation"
-            )
-
-        elif ann_type == "Freehand":
-            # Scale each point correctly
-            scaled_points = [p * current_width if i % 2 == 0 else p * current_height for i, p in enumerate(rel_coords)]
-            self.canvas.create_line(*scaled_points, fill="red", width=2, tags="annotation")
+    for annotation in self.annotations:
+        self.redraw_annotation(annotation, current_width, current_height)  # Calls single annotation function
 
     # Ensure listbox shows RELATIVE coordinates
     self.update_annotation_listbox()
+
+
 
 
 
