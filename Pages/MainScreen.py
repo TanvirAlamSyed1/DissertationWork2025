@@ -63,6 +63,10 @@ class MainPage(tk.Frame):
         
         self.annotation_listbox = tk.Listbox(right_sidebar, width=30, height=20)
         self.annotation_listbox.pack(padx=5, pady=5, fill=tk.BOTH, expand=True)
+        # Bind double-click event to trigger label function
+        self.annotation_listbox.bind("<Double-Button-1>", self.label_annotation)
+
+
         
        # Create the bottom toolbar
         bottom_toolbar = tk.Frame(self)
@@ -104,6 +108,7 @@ class MainPage(tk.Frame):
         # Bind keys to the entire application frame instead of the canvas
         self.bind_all("<Control-z>", self.undo_annotation)
         self.bind_all("<Control-y>", self.redo_annotation)
+        
 
     
     def switch_to_welcome_page(self):
@@ -175,6 +180,9 @@ class MainPage(tk.Frame):
     
     def redraw_annotation(self, annotation, new_width, new_height):
         util_zoom_functions.redraw_annotation(self, annotation, new_width, new_height)
+    
+    def label_annotation (self,event):
+        util_button_functions.label_annotation(self, event)
         
     def addlabel(self):
         print("hello world")

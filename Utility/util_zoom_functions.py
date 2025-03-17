@@ -79,38 +79,35 @@ def update_image_size(self, focus_x=None, focus_y=None, scale_factor=1.0):
 def redraw_annotation(self, annotation, new_width, new_height):
     """Redraws a single annotation at the correct scaled position."""
 
-    ann_type = annotation[0]
-    rel_coords = annotation[1]
+    ann_type = annotation["type"]  # ✅ Use dictionary keys
+    rel_coords = annotation["coordinates"]  # ✅ Use dictionary keys
 
     if ann_type == "Rectangle":
-        scaled_coords = [
-            rel_coords[0] * new_width,
-            rel_coords[1] * new_height,
-            rel_coords[2] * new_width,
-            rel_coords[3] * new_height
-        ]
-        self.canvas.create_rectangle(*scaled_coords, outline="red", tags="annotation")
+        x1, y1, x2, y2 = [rel_coords[i] * new_width if i % 2 == 0 else rel_coords[i] * new_height for i in range(4)]
+        self.canvas.create_rectangle(x1, y1, x2, y2, outline="red")
 
     elif ann_type == "Circle":
-        center_x = rel_coords[0] * new_width
-        center_y = rel_coords[1] * new_height
-        radius = rel_coords[2] * new_width  # Scale based on width
+        cx, cy, r = rel_coords
+        cx *= new_width
+        cy *= new_height
+        r *= new_width  # Scale radius based on width
 
         self.canvas.create_oval(
-            center_x - radius, center_y - radius,
-            center_x + radius, center_y + radius,
-            outline="red", tags="annotation"
+            cx - r, cy - r,
+            cx + r, cy + r,
+            outline="red"
         )
 
     elif ann_type == "Freehand":
         if len(rel_coords) < 4:
-            return  
+            return  # Not enough points for a freehand stroke
 
         scaled_points = [
             rel_coords[i] * new_width if i % 2 == 0 else rel_coords[i] * new_height
             for i in range(len(rel_coords))
         ]
-        self.canvas.create_line(*scaled_points, fill="red", width=2, tags="annotation")
+        self.canvas.create_line(*scaled_points, fill="red", width=2)
+
 
 
 
