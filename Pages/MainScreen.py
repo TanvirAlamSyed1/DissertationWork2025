@@ -101,8 +101,10 @@ class MainPage(tk.Frame):
         self.canvas.bind("<ButtonRelease-1>", self.on_release)
         # Add mouse wheel event binding for zooming
         self.canvas.bind("<MouseWheel>", self.on_mouse_wheel)
-        self.root.bind("<Control-z>", self.undo_annotation)
-        self.root.bind("<Control-y>", self.redo_annotation)
+        # Bind keys to the entire application frame instead of the canvas
+        self.bind_all("<Control-z>", self.undo_annotation)
+        self.bind_all("<Control-y>", self.redo_annotation)
+
     
     def switch_to_welcome_page(self):
         print("Switch to Welcome Page button clicked")  # Debug print
@@ -132,11 +134,11 @@ class MainPage(tk.Frame):
     def clear_annotation(self):
         util_annotation_function.clear_annotation(self)
 
-    def undo_annotation(self):
-        util_annotation_function.undo_annotation(self)
+    def undo_annotation(self,event):
+        util_annotation_function.undo_annotation(self,event)
     
-    def redo_annotation(self):
-        util_annotation_function.redo_annotation(self)
+    def redo_annotation(self,event):
+        util_annotation_function.redo_annotation(self, event)
 
     def change_annotation_type(self,event):
         util_annotation_function.change_annotation_type(self,event)

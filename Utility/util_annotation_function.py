@@ -128,24 +128,31 @@ def clear_annotation(self):
     self.undone_annotations.clear()
     self.update_annotation_listbox()
 
-def undo_annotation(self):
+def undo_annotation(self, event=None):
     """Undoes the last annotation."""
     if self.annotations:
         undone_annotation = self.annotations.pop()
         self.undone_annotations.append(undone_annotation)
 
-        self.canvas.delete(self.canvas.find_withtag("annotation")[-1])
+        # Delete last annotation from the canvas
+        annotation_ids = self.canvas.find_withtag("annotation")
+        if annotation_ids:
+            self.canvas.delete(annotation_ids[-1])
+
         self.update_annotation_listbox()
 
-def redo_annotation(self):
+def redo_annotation(self, event=None):
     """Redoes the last undone annotation."""
     if self.undone_annotations:
         redone_annotation = self.undone_annotations.pop()
         self.annotations.append(redone_annotation)
 
         # Get the current image size to scale correctly
-        img_width = self.image.width
-        img_height = self.image.height
+        if self.image:
+            img_width = self.image.width
+            img_height = self.image.height
+        else:
+            return  # Prevent crash if image is not loaded
 
         # Redraw the annotation on the canvas
         ann_type, rel_coords = redone_annotation
@@ -178,6 +185,7 @@ def redo_annotation(self):
             self.canvas.create_line(*abs_points, fill="red", width=2, tags="annotation")
 
         self.update_annotation_listbox()
+
 
 def update_annotation_listbox(self):
     """Updates the listbox to display RELATIVE coordinates."""
