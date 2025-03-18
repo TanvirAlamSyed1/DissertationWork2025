@@ -116,56 +116,54 @@ def clear_annotation(self):
     self.update_annotation_listbox()
 
 def undo_annotation(self, event=None):
-    """Undoes the last annotation by removing it from the canvas and storing it in the redo stack."""
-    if not self.annotations:
-        return  # No annotations to undo
+    """Undoes the last annotation action (either deleting or drawing)."""
 
-    # Remove the last annotation and store it in the redo stack
-    undone_annotation = self.annotations.pop()
-    self.undone_annotations.append(undone_annotation)
+    if not self.annotations and not self.undone_annotations:
+        return  # Nothing to undo
 
-    # Delete the last drawn annotation from the canvas
-    annotation_ids = self.canvas.find_withtag("annotation")
-    if annotation_ids:
-        self.canvas.delete(annotation_ids[-1])  # Remove only the last annotation
+    if self.annotations:
+        # ✅ Remove the last drawn annotation and store it for redo
+        undone_annotation = self.annotations.pop()
+        self.undone_annotations.append(undone_annotation)
+    else:
+        # ✅ If no new annotations, restore last deleted one
+        if self.undone_annotations:
+            restored_annotation = self.undone_annotations.pop()
+            self.annotations.append(restored_annotation)
 
-    self.update_annotation_listbox()  # Update the UI
+    self.redraw_annotations()  # ✅ Update canvas
+    self.update_annotation_listbox()  # ✅ Update Listbox
+
+def delete_specific_annotation(self):
+    """Deletes the selected annotation and stores it in the undo stack."""
+    
+    if self.selected_annotation_index is None or self.selected_annotation_index >= len(self.annotations):
+        return  # No valid selection
+
+    # Remove the annotation from the list and store it in the undo stack
+    deleted_annotation = self.annotations.pop(self.selected_annotation_index)
+    self.undone_annotations.append(deleted_annotation)  # ✅ Store in undo stack
+
+    # Remove the annotation from the canvas
+    self.redraw_annotations()  # ✅ Redraw the canvas without the deleted annotation
+
+    # Refresh UI
+    self.update_annotation_listbox()
 
 
 def redo_annotation(self, event=None):
-    """Redoes the last undone annotation."""
-    if self.undone_annotations:
-        redone_annotation = self.undone_annotations.pop()
-        self.annotations.append(redone_annotation)
+    """Redoes the last undone annotation, restoring it properly."""
+    
+    if not self.undone_annotations:
+        return  # No annotations to redo
 
-        # Get the current image size
-        if self.image:
-            img_width = self.image.width
-            img_height = self.image.height
-        else:
-            return  # Prevent crash if image is not loaded
+    # ✅ Restore the last undone annotation
+    redone_annotation = self.undone_annotations.pop()
+    self.annotations.append(redone_annotation)
 
-        # Extract annotation data
-        ann_type = redone_annotation["type"]
-        rel_coords = redone_annotation["coordinates"]
+    self.redraw_annotations()  # ✅ Update canvas properly
+    self.update_annotation_listbox()  # ✅ Sync with Listbox
 
-        if ann_type == "Rectangle":
-            abs_coords = [rel_coords[i] * (img_width if i % 2 == 0 else img_height) for i in range(4)]
-            self.canvas.create_rectangle(*abs_coords, outline="red", tags="annotation")
-
-        elif ann_type == "Circle":
-            cx, cy, r = rel_coords
-            cx *= img_width
-            cy *= img_height
-            r *= img_width  # Scale radius based on width
-
-            self.canvas.create_oval(cx - r, cy - r, cx + r, cy + r, outline="red", tags="annotation")
-
-        elif ann_type == "Freehand":
-            abs_points = [rel_coords[i] * (img_width if i % 2 == 0 else img_height) for i in range(len(rel_coords))]
-            self.canvas.create_line(*abs_points, fill="red", width=2, tags="annotation")
-
-        self.update_annotation_listbox()
 
 
 def update_annotation_listbox(self):
