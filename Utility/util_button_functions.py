@@ -27,18 +27,18 @@ def save_annotations(self):
         return
 
     current_image = self.image_files[self.current_image_index]
-    image_name = os.path.basename(current_image)  # Get full image name
+    image_name = os.path.basename(current_image)
     annotations_file = os.path.join(self.output_folder, f"{os.path.splitext(image_name)[0]}_annotations.json")
 
     if not self.image:
         messagebox.showerror("Error", "No image loaded.")
         return
 
-    img_width, img_height = self.image.width, self.image.height  # Ensure this refers to the PIL image
+    img_width, img_height = self.image.width, self.image.height
 
-    # Save annotations with image metadata
+    # Prepare annotation data
     annotations_data = {
-        "image_name": image_name,  # ✅ Store the image name
+        "image_name": image_name,
         "image_width": img_width,
         "image_height": img_height,
         "annotations": []
@@ -46,9 +46,10 @@ def save_annotations(self):
 
     for annotation in self.annotations:
         annotations_data["annotations"].append({
-            "type": annotation["type"],
-            "coordinates": annotation["coordinates"],
-            "label": annotation.get("label", "No Label")  # Ensure label is stored
+            "id": annotation.id,  # Store the annotation ID
+            "type": annotation.annotation_type,
+            "coordinates": annotation.coordinates,  # Already normalized
+            "label": annotation.label
         })
 
     # Save to JSON file
@@ -60,6 +61,8 @@ def save_annotations(self):
         messagebox.showerror("Error", f"Failed to save annotations: {e}")
 
 
+from Utility.annotation_classes import RectangleAnnotation, CircleAnnotation, FreehandAnnotation
+
 def load_annotations(self):
     """Loads annotations for the currently displayed image."""
     if not self.image_files or self.current_image_index == -1:
@@ -67,7 +70,7 @@ def load_annotations(self):
         return
 
     current_image = self.image_files[self.current_image_index]
-    image_name = os.path.basename(current_image)  # Get image name
+    image_name = os.path.basename(current_image)
     annotations_file = os.path.join(self.output_folder, f"{os.path.splitext(image_name)[0]}_annotations.json")
 
     if not os.path.exists(annotations_file):
@@ -94,20 +97,28 @@ def load_annotations(self):
 
     for ann in annotations_data["annotations"]:
         ann_type = ann.get("type")
-        rel_coords = ann.get("coordinates", [])  # Ensure default empty list
-        label = ann.get("label", "No Label")  # Ensure label is always present
+        rel_coords = ann.get("coordinates", [])  
+        label = ann.get("label", "No Label")  
 
         if ann_type and rel_coords:
-            self.annotations.append({
-                "type": ann_type,
-                "coordinates": rel_coords,
-                "label": label
-            })
+            if ann_type == "Rectangle":
+                annotation = RectangleAnnotation(*rel_coords)
+            elif ann_type == "Circle":
+                annotation = CircleAnnotation(*rel_coords)
+            elif ann_type == "Freehand":
+                annotation = FreehandAnnotation(rel_coords)
+            else:
+                continue  # Skip unrecognized annotation types
+
+            annotation.label = label  # Assign label
+            annotation.id = ann["id"]  # Restore the original ID
+            self.annotations.append(annotation)
 
     # Redraw annotations & update UI
     self.redraw_annotations()
     self.update_annotation_listbox()
     messagebox.showinfo("Loaded", f"Annotations loaded from {annotations_file}")
+
 
 def redraw_annotations(self):
     """Redraws all annotations on the canvas without deleting the image."""
@@ -122,29 +133,28 @@ def redraw_annotations(self):
     # Ensure image is properly drawn with a tag
     self.canvas.create_image(0, 0, anchor=tk.NW, image=self.photo, tags="image")
 
-    # Redraw each annotation
+    # Redraw each annotation using its class method
     for annotation in self.annotations:
         self.redraw_annotation(annotation, current_width, current_height)
 
     self.update_annotation_listbox()  # Update Listbox UI
 
+
 def label_annotation(self, event):
     """Allows the user to label an annotation when they double-click on it in the Listbox."""
-    # Get selected annotation index
     selected_index = self.annotation_listbox.curselection()
     
-    if not selected_index:  # If nothing is selected, return
+    if not selected_index:
         return
 
-    selected_index = selected_index[0]  # Get the first selected item index
-    annotation = self.annotations[selected_index]  # Get the annotation dictionary
+    selected_index = selected_index[0]  
+    annotation = self.annotations[selected_index]  
 
-    # Ask the user for a label
     label = tk.simpledialog.askstring("Label Annotation", "Enter a label for this annotation:")
 
     if label:  
-        annotation["label"] = label  # Update label
-        self.update_annotation_listbox()  # Refresh listbox to reflect the label
+        annotation.label = label  # Update label
+        self.update_annotation_listbox()  # Refresh listbox
 
 
 def download_annotations(self):

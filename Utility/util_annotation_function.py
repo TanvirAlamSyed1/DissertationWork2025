@@ -1,11 +1,12 @@
 import tkinter as tk
+from Utility.annotation_classes import RectangleAnnotation, CircleAnnotation, FreehandAnnotation
 
 def on_press(self, event):
     """Handles the start of an annotation."""
     self.start_x = self.canvas.canvasx(event.x)
     self.start_y = self.canvas.canvasy(event.y)
 
-    if self.current_annotation_type == "Freehand":
+    if self.current_annotation_type == FreehandAnnotation:
         self.current_annotation = self.canvas.create_line(
             self.start_x, self.start_y, self.start_x, self.start_y,
             fill="red", width=2, tags="annotation"
@@ -16,14 +17,14 @@ def on_drag(self, event):
     cur_x = self.canvas.canvasx(event.x)
     cur_y = self.canvas.canvasy(event.y)
 
-    if self.current_annotation_type == "Rectangle":
+    if self.current_annotation_type == RectangleAnnotation:
         self.canvas.delete("temp_annotation")
         self.current_annotation = self.canvas.create_rectangle(
             self.start_x, self.start_y, cur_x, cur_y,
             outline="red", tags="temp_annotation"
         )
 
-    elif self.current_annotation_type == "Circle":
+    elif self.current_annotation_type == CircleAnnotation:
         self.canvas.delete("temp_annotation")
 
         # Ensure the circle grows from start to end position
@@ -42,70 +43,50 @@ def on_drag(self, event):
         )
 
 
-    elif self.current_annotation_type == "Freehand":
+    elif self.current_annotation_type == FreehandAnnotation:
         self.canvas.coords(
             self.current_annotation,
             *self.canvas.coords(self.current_annotation),
             cur_x, cur_y
         )
 
-
 def on_release(self, event):
     """Finalizes an annotation when the mouse is released."""
     end_x = self.canvas.canvasx(event.x)
     end_y = self.canvas.canvasy(event.y)
 
-    self.canvas.delete("temp_annotation")  # Remove temporary drawings
+    self.canvas.delete("temp_annotation")
+    img_width, img_height = self.image.width, self.image.height
 
-    img_width = self.image.width
-    img_height = self.image.height
+    annotation = None
+    canvas_id = None  # Store Canvas ID for selection feature
 
-    rel_coords = []
+    if self.current_annotation_type == RectangleAnnotation:
+        annotation = RectangleAnnotation(self.start_x, self.start_y, end_x, end_y)
+        canvas_id = self.canvas.create_rectangle(self.start_x, self.start_y, end_x, end_y, outline="red", tags="annotation")
 
-    if self.current_annotation_type == "Rectangle":
-        self.current_annotation = self.canvas.create_rectangle(
-            self.start_x, self.start_y, end_x, end_y,
-            outline="red", tags="annotation"
-        )
-        ann_coords = self.canvas.coords(self.current_annotation)
-        rel_coords = [
-            ann_coords[0] / img_width,
-            ann_coords[1] / img_height,
-            ann_coords[2] / img_width,
-            ann_coords[3] / img_height
-        ]
-        self.annotations.append({"type": "Rectangle", "coordinates": rel_coords, "label": "No Label"})
-
-    elif self.current_annotation_type == "Circle":
-        x1, y1 = self.start_x, self.start_y
-        x2, y2 = end_x, end_y
-
-        # Calculate center and radius
-        center_x = (x1 + x2) / 2
-        center_y = (y1 + y2) / 2
-        radius = ((x2 - x1) ** 2 + (y2 - y1) ** 2) ** 0.5 / 2  # Euclidean distance
-
-        self.current_annotation = self.canvas.create_oval(
+    elif self.current_annotation_type == CircleAnnotation:
+        center_x, center_y = (self.start_x + end_x) / 2, (self.start_y + end_y) / 2
+        radius = ((end_x - self.start_x) ** 2 + (end_y - self.start_y) ** 2) ** 0.5 / 2
+        annotation = CircleAnnotation(center_x, center_y, radius)
+        canvas_id = self.canvas.create_oval(
             center_x - radius, center_y - radius,
             center_x + radius, center_y + radius,
             outline="red", tags="annotation"
         )
-        rel_coords = [
-            center_x / img_width,
-            center_y / img_height,
-            radius / img_width
-        ]
-        self.annotations.append({"type": "Circle", "coordinates": rel_coords, "label": "No Label"})
 
-    elif self.current_annotation_type == "Freehand":
+    elif self.current_annotation_type == FreehandAnnotation:
         points = self.canvas.coords(self.current_annotation)
-        rel_coords = [
-            points[i] / img_width if i % 2 == 0 else points[i] / img_height
-            for i in range(len(points))
-        ]
-        self.annotations.append({"type": "Freehand", "coordinates": rel_coords, "label": "No Label"})
+        annotation = FreehandAnnotation(points)
+        canvas_id = self.current_annotation  # Freehand already exists on the canvas
 
-    self.update_annotation_listbox()
+    if annotation:
+        annotation.coordinates = annotation.normalize_coordinates(img_width, img_height)
+        annotation.canvas_id = canvas_id  # ✅ Store Canvas ID
+        self.annotations.append(annotation)
+        self.update_annotation_listbox()
+
+
 
 
 def clear_annotation(self):
@@ -116,23 +97,13 @@ def clear_annotation(self):
     self.update_annotation_listbox()
 
 def undo_annotation(self, event=None):
-    """Undoes the last annotation action (either deleting or drawing)."""
-
-    if not self.annotations and not self.undone_annotations:
-        return  # Nothing to undo
-
+    """Undoes the last annotation action."""
     if self.annotations:
-        # ✅ Remove the last drawn annotation and store it for redo
-        undone_annotation = self.annotations.pop()
-        self.undone_annotations.append(undone_annotation)
-    else:
-        # ✅ If no new annotations, restore last deleted one
-        if self.undone_annotations:
-            restored_annotation = self.undone_annotations.pop()
-            self.annotations.append(restored_annotation)
+        self.undone_annotations.append(self.annotations.pop())
 
-    self.redraw_annotations()  # ✅ Update canvas
-    self.update_annotation_listbox()  # ✅ Update Listbox
+    self.redraw_annotations()
+    self.update_annotation_listbox()
+
 
 def delete_specific_annotation(self):
     """Deletes the selected annotation and stores it in the undo stack."""
@@ -152,30 +123,52 @@ def delete_specific_annotation(self):
 
 
 def redo_annotation(self, event=None):
-    """Redoes the last undone annotation, restoring it properly."""
-    
-    if not self.undone_annotations:
-        return  # No annotations to redo
+    """Redoes the last undone annotation."""
+    if self.undone_annotations:
+        self.annotations.append(self.undone_annotations.pop())
 
-    # ✅ Restore the last undone annotation
-    redone_annotation = self.undone_annotations.pop()
-    self.annotations.append(redone_annotation)
-
-    self.redraw_annotations()  # ✅ Update canvas properly
-    self.update_annotation_listbox()  # ✅ Sync with Listbox
-
+    self.redraw_annotations()
+    self.update_annotation_listbox()
 
 
 def update_annotation_listbox(self):
-    """Updates the Listbox with the latest annotations, including labels."""
-    self.annotation_listbox.delete(0, tk.END)  # Clear existing items
+    """Updates the Listbox with annotation types and labels."""
+    self.annotation_listbox.delete(0, tk.END)
 
-    for i, annotation in enumerate(self.annotations):
-        label = annotation.get("label", "No Label")  # Get label or default to "No Label"
-        ann_type = annotation["type"]
-        self.annotation_listbox.insert(tk.END, f"{ann_type}: {label}")  # Display type and label
+    for index, annotation in enumerate(self.annotations):
+        self.annotation_listbox.insert(tk.END, f"{index + 1}. {annotation.annotation_type}: {annotation.label}")
+
+    # Bind the selection event to highlight the selected annotation
+    self.annotation_listbox.bind("<<ListboxSelect>>", self.on_annotation_selected)
+
+def on_annotation_selected(self, event):
+    """Highlights the selected annotation on the canvas."""
+    selected_index = self.annotation_listbox.curselection()
+
+    if not selected_index:
+        return  # No selection made
+
+    selected_index = selected_index[0]  # Get the first selected item index
+    selected_annotation = self.annotations[selected_index]  # Get the annotation object
+
+    # Reset all annotations to default color
+    for annotation in self.annotations:
+        if isinstance(annotation, FreehandAnnotation):
+            self.canvas.itemconfig(annotation.canvas_id, fill="red")  # ✅ Freehand uses 'fill'
+        else:
+            self.canvas.itemconfig(annotation.canvas_id, outline="red")  # ✅ Other shapes use 'outline'
+
+    # Highlight the selected annotation
+    if isinstance(selected_annotation, FreehandAnnotation):
+        self.canvas.itemconfig(selected_annotation.canvas_id, fill="blue")  # ✅ Highlight Freehand in blue
+    else:
+        self.canvas.itemconfig(selected_annotation.canvas_id, outline="blue")  # ✅ Highlight other shapes in blue
+
 
 
 def change_annotation_type(self, event):
     """Changes the annotation type based on user selection."""
-    self.current_annotation_type = self.annotation_type.get()
+    selected_type = self.annotation_type.get()
+    if selected_type in self.annotation_classes:
+        self.current_annotation_type = self.annotation_classes[selected_type]  # ✅ Now stores class reference
+

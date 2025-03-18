@@ -4,79 +4,84 @@ from Utility import util_image_functions
 from Utility import util_annotation_function
 from Utility import util_button_functions
 from Utility import util_zoom_functions
+from Utility.annotation_classes import RectangleAnnotation, CircleAnnotation, FreehandAnnotation
 class MainPage(tk.Frame):
     def __init__(self, parent, controller):
         tk.Frame.__init__(self, parent)
-        self.controller = controller  # Assign the controller to self.controller
+        self.controller = controller
+
         # Create a main content frame
         main_content = tk.Frame(self)
         main_content.pack(fill=tk.BOTH, expand=True)
-        
-        self.image = None #this stores the file path
-        self.photo = None #this uploads the picture to the screen
-        self.annotations = [] #stores annotations
-        self.undone_annotations = []  # Stores undone annotations for redo
-        self.image_files = [] #loads all files within the folder
+
+        """These are the attributes of the mainpage"""
+        self.image = None
+        self.photo = None
+        self.annotations = []
+        self.undone_annotations = []
+        self.image_files = []
         self.current_image_index = -1
-        self.input_folder = "" #serves as a storage location for the path to the directory selected by the user.
-        self.output_folder = "" #used to create a folder that all annotations can be saved into
+        self.input_folder = ""
+        self.output_folder = ""
         self.current_annotation = None
-        self.zoom_factor = 1.0 #zoom in and out
-        
-        # Left toolbar for annotation comboboxes
+        self.zoom_factor = 1.0
+
+        """Left hand side of the page contains the load folder, save and load annotations and download all annotations"""
         left_toolbar = tk.Frame(main_content, bg='lightgray', width=200)
         left_toolbar.pack(side=tk.LEFT, fill=tk.Y, padx=5, pady=5)
-        left_toolbar.pack_propagate(False)  # Prevent shrinking
-        #select the folder the user wants to annotate
+        left_toolbar.pack_propagate(False)
+
         load_folder_button = tk.Button(left_toolbar, text="Load Folder", command=self.load_folder)
         load_folder_button.pack(pady=10, padx=5, fill=tk.X)
-        #Allow the user to save their current image annotation
+
         save_annotation_button = tk.Button(left_toolbar, text="Save Annotations Of Current Image", command=self.save_annotation)
         save_annotation_button.pack(pady=10, padx=5, fill=tk.X)
-        
+
         load_annotation_button = tk.Button(left_toolbar, text="Load Annotations Of Current Image", command=self.load_annotation)
         load_annotation_button.pack(pady=10, padx=5, fill=tk.X)
-    
+
         # Annotation type combobox
         annotation_type_label = tk.Label(left_toolbar, text="Annotation Type:")
         annotation_type_label.pack(pady=(10, 5))
-        self.annotation_type = ttk.Combobox(left_toolbar, values=["Rectangle", "Circle", "Freehand"])
-        self.annotation_type.set("Rectangle")
+
+        # ✅ Store class references for easy mapping
+        self.annotation_classes = {
+            "Rectangle": RectangleAnnotation,
+            "Circle": CircleAnnotation,
+            "Freehand": FreehandAnnotation
+        }
+
+        # ✅ Ensure Combobox contains string names, not classes
+        self.annotation_type = ttk.Combobox(left_toolbar, values=list(self.annotation_classes.keys()))
+        self.annotation_type.set("Rectangle")  # Default selection
         self.annotation_type.pack(pady=(0, 10), padx=5, fill=tk.X)
         self.annotation_type.bind("<<ComboboxSelected>>", self.change_annotation_type)
-        self.current_annotation_type = "Rectangle"
-        
+
+        # ✅ Ensure self.current_annotation_type stores a class reference
+        self.current_annotation_type = RectangleAnnotation  # Default annotation type
+
         download_annotation_button = tk.Button(left_toolbar, text="Download All Annotations", command=self.download_annotations)
         download_annotation_button.pack(pady=10, padx=5, fill=tk.X)
-        
-        # Add label entry field
-        label_frame = tk.Frame(left_toolbar)
-        label_frame.pack(pady=10, padx=5, fill=tk.X)
-        
-        # Right sidebar for displaying annotations
+
+        """Right Hand Side of the page that contains all the latest annotations"""
         right_sidebar = tk.Frame(main_content, bg='lightgray', width=250)
         right_sidebar.pack(side=tk.RIGHT, fill=tk.Y, padx=5, pady=5)
-        right_sidebar.pack_propagate(False)  # Prevent shrinking
-        
+        right_sidebar.pack_propagate(False)
+
         annotation_list_label = tk.Label(right_sidebar, text="Latest Annotations:", bg='lightgray')
         annotation_list_label.pack(pady=(10, 5))
-        
+
         self.annotation_listbox = tk.Listbox(right_sidebar, width=30, height=20)
         self.annotation_listbox.pack(padx=5, pady=5, fill=tk.BOTH, expand=True)
-        # Bind double-click event to trigger label function
         self.annotation_listbox.bind("<Double-Button-1>", self.label_annotation)
 
-
-        
-       # Create the bottom toolbar
+        """These are the buttons for the bottom of the screen"""
         bottom_toolbar = tk.Frame(self)
         bottom_toolbar.pack(side=tk.BOTTOM, fill=tk.X)
 
-        # Create a frame to hold the buttons
         button_frame = tk.Frame(bottom_toolbar)
         button_frame.pack(expand=True)
 
-        # Buttons at the bottom
         buttons = [
             ("Previous", self.prev_image),
             ("Next", self.next_image),
@@ -87,30 +92,31 @@ class MainPage(tk.Frame):
 
         for text, command in buttons:
             tk.Button(button_frame, text=text, command=command).pack(side=tk.LEFT, padx=5, pady=5)
-        
-        # Switch window button
+
         switch_window_button = tk.Button(
             bottom_toolbar,
             text="Go to the Main Screen",
-            command=self.switch_to_welcome_page,  # Ensure this is correct
+            command=self.switch_to_welcome_page,
         )
         switch_window_button.pack(side=tk.RIGHT, padx=5, pady=5)
-        
-         # Canvas for drawing
+
+        """Canvas for drawing"""
         self.canvas = tk.Canvas(main_content, bg="white")
         self.canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        # Bind canvas events
+
+        # ✅ Bind canvas events properly
         self.canvas.bind("<ButtonPress-1>", self.on_press)
         self.canvas.bind("<B1-Motion>", self.on_drag)
         self.canvas.bind("<ButtonRelease-1>", self.on_release)
         self.canvas.bind("<MouseWheel>", self.on_mouse_wheel)  # Windows
         self.canvas.bind("<Button-4>", self.on_mouse_wheel)  # Mac/Linux Scroll Up
         self.canvas.bind("<Button-5>", self.on_mouse_wheel)  # Mac/Linux Scroll Down
-        # Bind keys to the entire application frame instead of the canvas
+
+        # ✅ Bind keys globally for undo/redo
         self.bind_all("<Control-z>", self.undo_annotation)
         self.bind_all("<Control-y>", self.redo_annotation)
-        
-
+    
+    """ Here is where I've started splitting functions into seperate files in the utility folder, to keep code more clean"""
     
     def switch_to_welcome_page(self):
         print("Switch to Welcome Page button clicked")  # Debug print
@@ -121,9 +127,7 @@ class MainPage(tk.Frame):
         except ImportError as e:
             print(f"Error importing WelcomePage: {e}")  # Debug print
         except AttributeError as e:
-            print(f"Error with controller or show_frame: {e}")  # Debug print
-            
-    #Here is where I've started splitting functions into seperate files in the utility folder, to keep code more clean
+            print(f"Error with controller or show_frame: {e}")  # Debug print      
             
     def on_press(self, event): #this controlls what happens when you start annotating
         util_annotation_function.on_press(self, event)
@@ -145,9 +149,6 @@ class MainPage(tk.Frame):
     
     def redo_annotation(self,event=None):
         util_annotation_function.redo_annotation(self, event)
-
-    def change_annotation_type(self,event):
-        util_annotation_function.change_annotation_type(self,event)
 
     def load_folder(self):
         util_button_functions.load_folder(self)
@@ -176,6 +177,9 @@ class MainPage(tk.Frame):
     def save_annotation(self):
         util_button_functions.save_annotations(self)
     
+    def change_annotation_type(self, event):
+        util_annotation_function.change_annotation_type(self,event)
+    
     def redraw_annotations(self):
         util_button_functions.redraw_annotations(self)
     
@@ -184,8 +188,8 @@ class MainPage(tk.Frame):
     
     def label_annotation (self,event):
         util_button_functions.label_annotation(self, event)
-        
-    def addlabel(self):
-        print("hello world")
+    
+    def on_annotation_selected(self, event):
+        util_annotation_function.on_annotation_selected(self, event)
         
        

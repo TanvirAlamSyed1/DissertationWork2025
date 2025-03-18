@@ -1,5 +1,6 @@
 from PIL import Image, ImageTk
 import tkinter as tk
+from Utility.annotation_classes import RectangleAnnotation, CircleAnnotation, FreehandAnnotation
 
 def on_mouse_wheel(self, event):
     """Handles zooming in and out while keeping the cursor at the same position."""
@@ -79,14 +80,14 @@ def update_image_size(self, focus_x=None, focus_y=None, scale_factor=1.0):
 def redraw_annotation(self, annotation, new_width, new_height):
     """Redraws a single annotation at the correct scaled position."""
 
-    ann_type = annotation["type"]  # ✅ Use dictionary keys
-    rel_coords = annotation["coordinates"]  # ✅ Use dictionary keys
+    ann_type = annotation.annotation_type  # ✅ Use object attributes
+    rel_coords = annotation.coordinates  # ✅ Use object attributes
 
-    if ann_type == "Rectangle":
+    if isinstance(annotation, RectangleAnnotation):
         x1, y1, x2, y2 = [rel_coords[i] * new_width if i % 2 == 0 else rel_coords[i] * new_height for i in range(4)]
-        self.canvas.create_rectangle(x1, y1, x2, y2, outline="red")
+        self.canvas.create_rectangle(x1, y1, x2, y2, outline="red", tags="annotation")
 
-    elif ann_type == "Circle":
+    elif isinstance(annotation, CircleAnnotation):
         cx, cy, r = rel_coords
         cx *= new_width
         cy *= new_height
@@ -95,10 +96,10 @@ def redraw_annotation(self, annotation, new_width, new_height):
         self.canvas.create_oval(
             cx - r, cy - r,
             cx + r, cy + r,
-            outline="red"
+            outline="red", tags="annotation"
         )
 
-    elif ann_type == "Freehand":
+    elif isinstance(annotation, FreehandAnnotation):
         if len(rel_coords) < 4:
             return  # Not enough points for a freehand stroke
 
@@ -106,7 +107,7 @@ def redraw_annotation(self, annotation, new_width, new_height):
             rel_coords[i] * new_width if i % 2 == 0 else rel_coords[i] * new_height
             for i in range(len(rel_coords))
         ]
-        self.canvas.create_line(*scaled_points, fill="red", width=2)
+        self.canvas.create_line(*scaled_points, fill="red", width=2, tags="annotation")
 
 
 
