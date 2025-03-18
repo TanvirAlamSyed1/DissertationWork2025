@@ -8,6 +8,7 @@ class Annotation:
         self.annotation_type = annotation_type
         self.coordinates = coordinates
         self.label = "No Label"
+        self.canvas_id = None  # ✅ Store Canvas ID (default: None)
 
     def normalize_coordinates(self, img_width, img_height):
         """Converts absolute coordinates to relative format."""
