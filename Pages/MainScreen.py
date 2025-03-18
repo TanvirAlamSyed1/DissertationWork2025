@@ -139,10 +139,10 @@ class MainPage(tk.Frame):
     def clear_annotation(self):
         util_annotation_function.clear_annotation(self)
 
-    def undo_annotation(self,event):
+    def undo_annotation(self,event=None):
         util_annotation_function.undo_annotation(self,event)
     
-    def redo_annotation(self,event):
+    def redo_annotation(self,event=None):
         util_annotation_function.redo_annotation(self, event)
 
     def change_annotation_type(self,event):
