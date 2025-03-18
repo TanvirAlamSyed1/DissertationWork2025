@@ -103,8 +103,9 @@ class MainPage(tk.Frame):
         self.canvas.bind("<ButtonPress-1>", self.on_press)
         self.canvas.bind("<B1-Motion>", self.on_drag)
         self.canvas.bind("<ButtonRelease-1>", self.on_release)
-        # Add mouse wheel event binding for zooming
-        self.canvas.bind("<MouseWheel>", self.on_mouse_wheel)
+        self.canvas.bind("<MouseWheel>", self.on_mouse_wheel)  # Windows
+        self.canvas.bind("<Button-4>", self.on_mouse_wheel)  # Mac/Linux Scroll Up
+        self.canvas.bind("<Button-5>", self.on_mouse_wheel)  # Mac/Linux Scroll Down
         # Bind keys to the entire application frame instead of the canvas
         self.bind_all("<Control-z>", self.undo_annotation)
         self.bind_all("<Control-y>", self.redo_annotation)

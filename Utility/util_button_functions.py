@@ -109,10 +109,9 @@ def load_annotations(self):
     self.update_annotation_listbox()
     messagebox.showinfo("Loaded", f"Annotations loaded from {annotations_file}")
 
-
 def redraw_annotations(self):
-    """Redraws all annotations on the canvas."""
-    self.canvas.delete("all")  # Clear everything
+    """Redraws all annotations on the canvas without deleting the image."""
+    self.canvas.delete("annotation")  # Clear only annotations, not the image
 
     if not self.image:
         return  # Prevent errors if no image is loaded
@@ -120,14 +119,14 @@ def redraw_annotations(self):
     current_width = self.image.width
     current_height = self.image.height
 
-    # Draw the image first
-    self.canvas.create_image(0, 0, anchor=tk.NW, image=self.photo)
+    # Ensure image is properly drawn with a tag
+    self.canvas.create_image(0, 0, anchor=tk.NW, image=self.photo, tags="image")
 
     # Redraw each annotation
     for annotation in self.annotations:
         self.redraw_annotation(annotation, current_width, current_height)
 
-    self.update_annotation_listbox()  # Ensure Listbox updates
+    self.update_annotation_listbox()  # Update Listbox UI
 
 def label_annotation(self, event):
     """Allows the user to label an annotation when they double-click on it in the Listbox."""
