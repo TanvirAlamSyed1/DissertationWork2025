@@ -85,7 +85,7 @@ def redraw_annotation(self, annotation, new_width, new_height):
 
     if isinstance(annotation, RectangleAnnotation):
         x1, y1, x2, y2 = [rel_coords[i] * new_width if i % 2 == 0 else rel_coords[i] * new_height for i in range(4)]
-        self.canvas.create_rectangle(x1, y1, x2, y2, outline="red", tags="annotation")
+        canvas_id = self.canvas.create_rectangle(x1, y1, x2, y2, outline="red", tags="annotation")
 
     elif isinstance(annotation, CircleAnnotation):
         cx, cy, r = rel_coords
@@ -93,7 +93,7 @@ def redraw_annotation(self, annotation, new_width, new_height):
         cy *= new_height
         r *= new_width  # Scale radius based on width
 
-        self.canvas.create_oval(
+        canvas_id = self.canvas.create_oval(
             cx - r, cy - r,
             cx + r, cy + r,
             outline="red", tags="annotation"
@@ -107,7 +107,10 @@ def redraw_annotation(self, annotation, new_width, new_height):
             rel_coords[i] * new_width if i % 2 == 0 else rel_coords[i] * new_height
             for i in range(len(rel_coords))
         ]
-        self.canvas.create_line(*scaled_points, fill="red", width=2, tags="annotation")
+        canvas_id = self.canvas.create_line(*scaled_points, fill="red", width=2, tags="annotation")
+    
+    annotation.canvas_id = canvas_id
+    return annotation
 
 
 

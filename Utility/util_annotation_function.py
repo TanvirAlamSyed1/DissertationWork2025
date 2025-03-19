@@ -86,9 +86,6 @@ def on_release(self, event):
         self.annotations.append(annotation)
         self.update_annotation_listbox()
 
-
-
-
 def clear_annotation(self):
     """Clears all annotations."""
     self.canvas.delete("annotation")

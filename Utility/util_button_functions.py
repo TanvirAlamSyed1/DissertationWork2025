@@ -1,5 +1,6 @@
 import tkinter as tk
 from tkinter import filedialog, messagebox
+from Utility.annotation_classes import RectangleAnnotation, CircleAnnotation, FreehandAnnotation
 from tkinter import simpledialog
 import json
 import os
@@ -60,9 +61,6 @@ def save_annotations(self):
     except IOError as e:
         messagebox.showerror("Error", f"Failed to save annotations: {e}")
 
-
-from Utility.annotation_classes import RectangleAnnotation, CircleAnnotation, FreehandAnnotation
-
 def load_annotations(self):
     """Loads annotations for the currently displayed image."""
     if not self.image_files or self.current_image_index == -1:
@@ -94,27 +92,59 @@ def load_annotations(self):
         return
 
     self.annotations.clear()  # Clear existing annotations
+    self.canvas.update_idletasks()
+    canvas_width = self.canvas.winfo_width()
+    canvas_height = self.canvas.winfo_height()
 
     for ann in annotations_data["annotations"]:
         ann_type = ann.get("type")
-        rel_coords = ann.get("coordinates", [])  
-        label = ann.get("label", "No Label")  
+        rel_coords = ann.get("coordinates", [])
+        label = ann.get("label", "No Label")
 
         if ann_type and rel_coords:
-            if ann_type == "Rectangle":
+            if ann_type == "Rectangle" and len(rel_coords) == 4:
+                abs_coords = [
+                    rel_coords[0] * canvas_width,
+                    rel_coords[1] * canvas_height,
+                    rel_coords[2] * canvas_width,
+                    rel_coords[3] * canvas_height
+                ]
+
                 annotation = RectangleAnnotation(*rel_coords)
-            elif ann_type == "Circle":
+
+            elif ann_type == "Circle" and len(rel_coords) == 3:
+                center_x = rel_coords[0] * canvas_width
+                center_y = rel_coords[1] * canvas_height
+                radius = rel_coords[2] * min(canvas_width, canvas_height)
+
+                abs_coords = [
+                    center_x - radius,
+                    center_y - radius,
+                    center_x + radius,
+                    center_y + radius
+                ]
+
                 annotation = CircleAnnotation(*rel_coords)
-            elif ann_type == "Freehand":
-                annotation = FreehandAnnotation(rel_coords)
+
+            elif ann_type == "Freehand" and len(rel_coords) % 2 == 0:
+                # For your current JSON structure, freehand coords are flat pairs [x1, y1, x2, y2,...]
+                abs_coords = []
+                for i in range(0, len(rel_coords), 2):
+                    x = rel_coords[i] * canvas_width
+                    y = rel_coords[i+1] * canvas_height
+                    abs_coords.append((x, y))
+
+                flat_coords = [coord for point in abs_coords for coord in point]
+
+                annotation = FreehandAnnotation(abs_coords)
+
             else:
-                continue  # Skip unrecognized annotation types
+                continue  # Skip unrecognized or improperly formatted annotations
 
-            annotation.label = label  # Assign label
-            annotation.id = ann["id"]  # Restore the original ID
+            annotation.label = label
+            annotation.id = ann.get("id", "")
             self.annotations.append(annotation)
-
-    # Redraw annotations & update UI
+    
     self.redraw_annotations()
     self.update_annotation_listbox()
     messagebox.showinfo("Loaded", f"Annotations loaded from {annotations_file}")
@@ -135,7 +165,7 @@ def redraw_annotations(self):
 
     # Redraw each annotation using its class method
     for annotation in self.annotations:
-        self.redraw_annotation(annotation, current_width, current_height)
+        annotation = self.redraw_annotation(annotation, current_width, current_height)
 
     self.update_annotation_listbox()  # Update Listbox UI
 
