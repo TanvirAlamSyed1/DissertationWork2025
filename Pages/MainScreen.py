@@ -4,7 +4,7 @@ from Utility import util_image_functions
 from Utility import util_annotation_function
 from Utility import util_button_functions
 from Utility import util_zoom_functions
-from Utility.annotation_classes import RectangleAnnotation, CircleAnnotation, FreehandAnnotation
+from Utility.annotation_classes import *
 class MainPage(tk.Frame):
     def __init__(self, parent, controller):
         tk.Frame.__init__(self, parent)
@@ -48,7 +48,9 @@ class MainPage(tk.Frame):
         self.annotation_classes = {
             "Rectangle": RectangleAnnotation,
             "Circle": CircleAnnotation,
-            "Freehand": FreehandAnnotation
+            "Freehand": FreehandAnnotation,
+            "Polygon": PolygonAnnotation,
+            "KeyPoints":KeypointAnnotation
         }
 
         # ✅ Ensure Combobox contains string names, not classes
