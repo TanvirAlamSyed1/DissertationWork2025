@@ -1,7 +1,6 @@
 import uuid
 
 class Annotation:
-    """Base class for annotations"""
     def __init__(self, annotation_type, coordinates):
         self.id = str(uuid.uuid4())
         self.annotation_type = annotation_type
@@ -9,12 +8,11 @@ class Annotation:
         self.label = "No Label"
         self.canvas_id = None
 
-    # Example normalization in Annotation subclass
     def normalize_coordinates(self, img_width, img_height):
         return [
             coord / img_width if i % 2 == 0 else coord / img_height
             for i, coord in enumerate(self.coordinates)
-    ]
+        ]
 
     def to_dict(self):
         return {
@@ -24,31 +22,70 @@ class Annotation:
             "label": self.label
         }
 
+    def get_absolute_bounds(self):
+        """Should be implemented by subclasses."""
+        raise NotImplementedError
+
+
 class RectangleAnnotation(Annotation):
     def __init__(self, start_x, start_y, end_x, end_y):
         super().__init__("Rectangle", [start_x, start_y, end_x, end_y])
 
-class CircleAnnotation(Annotation):
-    def __init__(self, center_x, center_y, radius):
-        super().__init__("Circle", [center_x, center_y, radius])
+    def get_absolute_bounds(self):
+        x1, y1, x2, y2 = self.coordinates
+        return min(x1, x2), min(y1, y2), max(x1, x2), max(y1, y2)
 
-class FreehandAnnotation(Annotation):  # Freehand as polygon (COCO-style)
+
+class EllipseAnnotation(Annotation):
+    def __init__(self, x1, y1, x2, y2):
+        super().__init__("Ellipse", [x1, y1, x2, y2])
+
+    def get_absolute_bounds(self):
+        x1, y1, x2, y2 = self.coordinates
+        return min(x1, x2), min(y1, y2), max(x1, x2), max(y1, y2)
+
+
+
+class FreehandAnnotation(Annotation):
     def __init__(self, points):
         super().__init__("Freehand", points)
+
+    def get_absolute_bounds(self):
+        xs = self.coordinates[::2]
+        ys = self.coordinates[1::2]
+        return min(xs), min(ys), max(xs), max(ys)
+
 
 class PolygonAnnotation(Annotation):
     def __init__(self, points):
         super().__init__("Polygon", points)
 
+    def get_absolute_bounds(self):
+        xs = self.coordinates[::2]
+        ys = self.coordinates[1::2]
+        return min(xs), min(ys), max(xs), max(ys)
+
+
 class KeypointAnnotation(Annotation):
-    def __init__(self, keypoints):  # keypoints: list of tuples (x,y,visibility)
+    def __init__(self, keypoints):  # list of (x, y, visibility)
         super().__init__("Keypoint", keypoints)
 
     def normalize_coordinates(self, img_width, img_height):
         return [
-            (x/img_width, y/img_height, v) for x, y, v in self.coordinates
+            (x / img_width, y / img_height, v)
+            for x, y, v in self.coordinates
         ]
+
+    def get_absolute_bounds(self):
+        xs = [x for x, y, v in self.coordinates]
+        ys = [y for x, y, v in self.coordinates]
+        return min(xs), min(ys), max(xs), max(ys)
+
+
 class SemanticSegmentationAnnotation(Annotation):
     def __init__(self, mask_filename):
-        super().__init__("SemanticSegmentation", mask_file_path)
+        super().__init__("SemanticSegmentation", mask_filename)
 
+    def get_absolute_bounds(self):
+        # Optional: return image-wide bounds or None
+        return (0, 0, 0, 0)

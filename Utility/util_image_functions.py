@@ -9,12 +9,23 @@ def load_image(self):
         self.image = Image.open(image_path)
         new_width, new_height = self.image.width, self.image.height
         self.photo = ImageTk.PhotoImage(self.image)
+
+        # Clear existing canvas content
         self.canvas.delete("image")
         self.canvas.config(width=new_width, height=new_height)
-        self.canvas.create_image(0, 0, anchor=tk.NW, image=self.photo, tags="image")
+
+        # Draw image at top-left and store position
+        self.image_x = 0
+        self.image_y = 0
+        self.canvas.create_image(self.image_x, self.image_y, anchor=tk.NW, image=self.photo, tags="image")
+
+        # Set canvas scroll region
         self.canvas.config(scrollregion=(0, 0, new_width, new_height))
+
+        # Reset annotations
         self.annotations = []
         self.clear_annotation()
+
 
 
 def next_image(self):

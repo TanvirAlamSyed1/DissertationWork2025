@@ -1,6 +1,6 @@
 import tkinter as tk
 from tkinter import filedialog, messagebox
-from Utility.annotation_classes import RectangleAnnotation, CircleAnnotation, FreehandAnnotation
+from Utility.annotation_classes import *
 from tkinter import simpledialog
 import json
 import os
@@ -112,31 +112,27 @@ def load_annotations(self):
 
                 annotation = RectangleAnnotation(*rel_coords)
 
-            elif ann_type == "Circle" and len(rel_coords) == 3:
-                center_x = rel_coords[0] * canvas_width
-                center_y = rel_coords[1] * canvas_height
-                radius = rel_coords[2] * min(canvas_width, canvas_height)
-
+            elif ann_type == "Ellipse" and len(rel_coords) == 4:
                 abs_coords = [
-                    center_x - radius,
-                    center_y - radius,
-                    center_x + radius,
-                    center_y + radius
+                    rel_coords[0] * canvas_width,
+                    rel_coords[1] * canvas_height,
+                    rel_coords[2] * canvas_width,
+                    rel_coords[3] * canvas_height
                 ]
 
-                annotation = CircleAnnotation(*rel_coords)
+                annotation = EllipseAnnotation(*rel_coords)
+
 
             elif ann_type == "Freehand" and len(rel_coords) % 2 == 0:
-                # For your current JSON structure, freehand coords are flat pairs [x1, y1, x2, y2,...]
                 abs_coords = []
                 for i in range(0, len(rel_coords), 2):
-                    x = rel_coords[i] * canvas_width
-                    y = rel_coords[i+1] * canvas_height
-                    abs_coords.append((x, y))
-
-                flat_coords = [coord for point in abs_coords for coord in point]
+                    x = rel_coords[i] * self.image.width
+                    y = rel_coords[i + 1] * self.image.height
+                    abs_coords.extend([x, y])  # ✅ creates flat list
 
                 annotation = FreehandAnnotation(abs_coords)
+
+
 
             else:
                 continue  # Skip unrecognized or improperly formatted annotations

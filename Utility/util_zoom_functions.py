@@ -1,6 +1,6 @@
 from PIL import Image, ImageTk
 import tkinter as tk
-from Utility.annotation_classes import RectangleAnnotation, CircleAnnotation, FreehandAnnotation
+from Utility.annotation_classes import *
 
 def on_mouse_wheel(self, event):
     """Handles zooming in and out while keeping the cursor at the same position."""
@@ -80,37 +80,45 @@ def update_image_size(self, focus_x=None, focus_y=None, scale_factor=1.0):
 def redraw_annotation(self, annotation, new_width, new_height):
     """Redraws a single annotation at the correct scaled position."""
 
-    ann_type = annotation.annotation_type  # ✅ Use object attributes
-    rel_coords = annotation.coordinates  # ✅ Use object attributes
+    ann_type = annotation.annotation_type
+    rel_coords = annotation.coordinates
 
     if isinstance(annotation, RectangleAnnotation):
         x1, y1, x2, y2 = [rel_coords[i] * new_width if i % 2 == 0 else rel_coords[i] * new_height for i in range(4)]
         canvas_id = self.canvas.create_rectangle(x1, y1, x2, y2, outline="red", tags="annotation")
+        annotation.canvas_id = canvas_id
 
-    elif isinstance(annotation, CircleAnnotation):
-        cx, cy, r = rel_coords
-        cx *= new_width
-        cy *= new_height
-        r *= new_width  # Scale radius based on width
-
-        canvas_id = self.canvas.create_oval(
-            cx - r, cy - r,
-            cx + r, cy + r,
-            outline="red", tags="annotation"
-        )
+    elif isinstance(annotation, EllipseAnnotation):
+        x1 = rel_coords[0] * new_width
+        y1 = rel_coords[1] * new_height
+        x2 = rel_coords[2] * new_width
+        y2 = rel_coords[3] * new_height
+        canvas_id = self.canvas.create_oval(x1, y1, x2, y2, outline="red", tags="annotation")
+        annotation.canvas_id = canvas_id
 
     elif isinstance(annotation, FreehandAnnotation):
         if len(rel_coords) < 4:
-            return  # Not enough points for a freehand stroke
+            return
 
-        scaled_points = [
-            rel_coords[i] * new_width if i % 2 == 0 else rel_coords[i] * new_height
-            for i in range(len(rel_coords))
-        ]
+        # Check if the first few coords are normalized (0-1) or already absolute
+        is_normalized = all(0 <= c <= 1 for c in rel_coords[:6])  # sample check
+
+        if is_normalized:
+            scaled_points = [
+                rel_coords[i] * new_width if i % 2 == 0 else rel_coords[i] * new_height
+                for i in range(len(rel_coords))
+            ]
+            print("[DEBUG] Scaling FreehandAnnotation points (normalized input)")
+        else:
+            scaled_points = rel_coords  # already absolute
+            print("[DEBUG] Using absolute FreehandAnnotation points")
+
         canvas_id = self.canvas.create_line(*scaled_points, fill="red", width=2, tags="annotation")
-    
-    annotation.canvas_id = canvas_id
+        annotation.canvas_id = canvas_id
+
+
     return annotation
+
 
 
 

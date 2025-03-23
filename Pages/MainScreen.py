@@ -16,6 +16,8 @@ class MainPage(tk.Frame):
 
         """These are the attributes of the mainpage"""
         self.image = None
+        self.image_x = 0  # Or any desired x-offset
+        self.image_y = 0  # Or any desired y-offset
         self.photo = None
         self.annotations = []
         self.undone_annotations = []
@@ -47,7 +49,7 @@ class MainPage(tk.Frame):
         # ✅ Store class references for easy mapping
         self.annotation_classes = {
             "Rectangle": RectangleAnnotation,
-            "Circle": CircleAnnotation,
+            "Ellipse": EllipseAnnotation,
             "Freehand": FreehandAnnotation,
             "Polygon": PolygonAnnotation,
             "KeyPoints":KeypointAnnotation
@@ -193,5 +195,11 @@ class MainPage(tk.Frame):
     
     def on_annotation_selected(self, event):
         util_annotation_function.on_annotation_selected(self, event)
+        
+    def clamp_to_image_bounds(self, x, y):
+        return util_annotation_function.clamp_to_image_bounds(self, x, y)
+    
+    def is_within_image_bounds(self, annotation):
+        return util_annotation_function.is_within_image_bounds(self, annotation)
         
        
