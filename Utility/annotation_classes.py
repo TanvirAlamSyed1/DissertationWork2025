@@ -65,10 +65,17 @@ class PolygonAnnotation(Annotation):
     def __init__(self, points):
         super().__init__("Polygon", points)
 
+    def normalize_coordinates(self, img_width, img_height):
+        return [
+            x / img_width if i % 2 == 0 else x / img_height
+            for i, x in enumerate(self.coordinates)
+        ]
+
     def get_absolute_bounds(self):
         xs = self.coordinates[::2]
         ys = self.coordinates[1::2]
         return min(xs), min(ys), max(xs), max(ys)
+
 
 
 class KeypointAnnotation(Annotation):
@@ -106,6 +113,8 @@ class SemanticSegmentationAnnotation(Annotation):
     def __init__(self, mask_filename):
         super().__init__("SemanticSegmentation", mask_filename)
 
+    def normalize_coordinates(self, img_width, img_height):
+        return self.coordinates  # Just return the filename
+
     def get_absolute_bounds(self):
-        # Optional: return image-wide bounds or None
         return (0, 0, 0, 0)

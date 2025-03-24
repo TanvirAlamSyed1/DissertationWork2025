@@ -1,9 +1,12 @@
 import os
+from tkinter import messagebox
 from PIL import Image, ImageTk
 import tkinter as tk
 
 def load_image(self):
-    """Loads the current image at its default size and resets scroll region."""
+    confirm = messagebox.askyesno("Have you saved annotations?", "If you haven't saved your annotations, and move on, they won't be saved. are you sure you want to move on?", parent=self.controller)
+    if not confirm:
+        return
     if 0 <= self.current_image_index < len(self.image_files):
         image_path = os.path.join(self.input_folder, self.image_files[self.current_image_index])
         self.image = Image.open(image_path)
@@ -45,3 +48,21 @@ def prev_image(self):
         self.keypoints = []
         self.keypoint_canvas_ids = []
         self.load_image()
+
+def go_to_image_by_name(self):
+    image_name = self.search_entry.get().strip()
+    if not image_name:
+        messagebox.showwarning("Input Required", "Please enter an image name.", parent=self.controller)
+        return
+
+    # Normalize name for search
+    image_name = image_name.lower()
+    
+    # Try exact match
+    for i, filename in enumerate(self.image_files):
+        if filename.lower() == image_name or filename.lower().startswith(image_name):
+            self.current_image_index = i
+            self.load_image()
+            return
+
+    messagebox.showwarning("Not Found", f"No image found matching: {image_name}", parent=self.controller)

@@ -104,17 +104,14 @@ def redraw_annotation(self, annotation, new_width, new_height):
             rel_coords[i] * new_width if i % 2 == 0 else rel_coords[i] * new_height
             for i in range(len(rel_coords))
         ]
-
-
         canvas_id = self.canvas.create_line(*scaled_points, fill="red", width=2, tags="annotation")
         annotation.canvas_id = canvas_id
     
     elif isinstance(annotation, KeypointAnnotation):
         dot_ids = []
         for x_norm, y_norm, v in annotation.coordinates:
-            print(f"[DEBUG] Redrawing Keypoint: x_norm={x_norm}, y_norm={y_norm}")
-            x = int(x_norm * new_width)
-            y = int(y_norm * new_height)
+            x = x_norm * new_width
+            y = y_norm * new_height
             r = 3
             dot = self.canvas.create_oval(
                 x - r, y - r, x + r, y + r,
@@ -122,6 +119,24 @@ def redraw_annotation(self, annotation, new_width, new_height):
             )
             dot_ids.append(dot)
         annotation.canvas_id = dot_ids
+
+        
+    elif isinstance(annotation, PolygonAnnotation):
+        if len(rel_coords) >= 6:
+            scaled_points = [
+                rel_coords[i] * new_width if i % 2 == 0 else rel_coords[i] * new_height
+                for i in range(len(rel_coords))
+            ]
+            canvas_id = self.canvas.create_polygon(
+                scaled_points,
+                outline="red",
+                fill="",
+                width=2,
+                tags="annotation"
+            )
+            annotation.canvas_id = canvas_id
+
+
     return annotation
 
 

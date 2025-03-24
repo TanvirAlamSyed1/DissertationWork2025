@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import ttk
+from tkinter import ttk,messagebox
 from Utility import util_image_functions
 from Utility import util_annotation_function
 from Utility import util_button_functions
@@ -23,6 +23,8 @@ class MainPage(tk.Frame):
         self.undone_annotations = []
         self.keypoints = []
         self.keypoint_canvas_ids = []
+        self.polygon_points = []
+        self.polygon_preview_id = None
         self.image_files = []
         self.current_image_index = -1
         self.input_folder = ""
@@ -34,6 +36,18 @@ class MainPage(tk.Frame):
         left_toolbar = tk.Frame(main_content, bg='lightgray', width=200)
         left_toolbar.pack(side=tk.LEFT, fill=tk.Y, padx=5, pady=5)
         left_toolbar.pack_propagate(False)
+        
+        search_label = tk.Label(left_toolbar, text="Search Image:")
+        search_label.pack(pady=(10, 0), padx=5, anchor="w")
+
+        search_frame = tk.Frame(left_toolbar)
+        search_frame.pack(padx=5, fill=tk.X)
+
+        self.search_entry = tk.Entry(search_frame)
+        self.search_entry.pack(side=tk.LEFT, fill=tk.X, expand=True)
+
+        search_button = tk.Button(search_frame, text="Go", width=4, command=self.go_to_image_by_name)
+        search_button.pack(side=tk.RIGHT, padx=(5, 0))
 
         load_folder_button = tk.Button(left_toolbar, text="Load Folder", command=self.load_folder)
         load_folder_button.pack(pady=10, padx=5, fill=tk.X)
@@ -48,18 +62,19 @@ class MainPage(tk.Frame):
         annotation_type_label = tk.Label(left_toolbar, text="Annotation Type:")
         annotation_type_label.pack(pady=(10, 5))
 
-        # ✅ Store class references for easy mapping
+# Store the mapping once (strings to class)
         self.annotation_classes = {
             "Rectangle": RectangleAnnotation,
             "Ellipse": EllipseAnnotation,
             "Freehand": FreehandAnnotation,
             "Polygon": PolygonAnnotation,
-            "KeyPoints":KeypointAnnotation
+            "Keypoints": KeypointAnnotation
         }
 
-        # ✅ Ensure Combobox contains string names, not classes
-        self.annotation_type = ttk.Combobox(left_toolbar, values=list(self.annotation_classes.keys()))
-        self.annotation_type.set("Rectangle")  # Default selection
+        # ✅ Only string keys go into the combobox
+        self.annotation_type = ttk.Combobox(left_toolbar, values=list(self.annotation_classes.keys()), state="readonly")
+        self.annotation_type.set("Rectangle")  # Default
+
         self.annotation_type.pack(pady=(0, 10), padx=5, fill=tk.X)
         self.annotation_type.bind("<<ComboboxSelected>>", self.change_annotation_type)
 
@@ -79,8 +94,12 @@ class MainPage(tk.Frame):
 
         self.annotation_listbox = tk.Listbox(right_sidebar, width=30, height=20)
         self.annotation_listbox.pack(padx=5, pady=5, fill=tk.BOTH, expand=True)
-        self.annotation_listbox.bind("<Double-Button-1>", self.label_annotation)
-
+        # Right-click context menu for annotations
+        self.listbox_menu = tk.Menu(self, tearoff=0)
+        self.listbox_menu.add_command(label="Label Annotation", command=self.label_annotation)
+        self.listbox_menu.add_command(label="Delete Annotation", command=self.delete_specific_annotation)
+        self.annotation_listbox.bind("<Button-3>", self.show_listbox_menu)  # Right-click
+        
         """These are the buttons for the bottom of the screen"""
         bottom_toolbar = tk.Frame(self)
         bottom_toolbar.pack(side=tk.BOTTOM, fill=tk.X)
@@ -114,7 +133,7 @@ class MainPage(tk.Frame):
         self.canvas.bind("<ButtonPress-1>", self.on_press)
         self.canvas.bind("<B1-Motion>", self.on_drag)
         self.canvas.bind("<ButtonRelease-1>", self.on_release)
-        self.bind_all("<KeyPress-f>", self.finalize_keypoints)
+        self.bind_all("<KeyPress-f>", self.finalise_all)
         self.canvas.bind("<MouseWheel>", self.on_mouse_wheel)  # Windows
         self.canvas.bind("<Button-4>", self.on_mouse_wheel)  # Mac/Linux Scroll Up
         self.canvas.bind("<Button-5>", self.on_mouse_wheel)  # Mac/Linux Scroll Down
@@ -193,7 +212,7 @@ class MainPage(tk.Frame):
     def redraw_annotation(self, annotation, new_width, new_height):
         util_zoom_functions.redraw_annotation(self, annotation, new_width, new_height)
     
-    def label_annotation (self,event):
+    def label_annotation (self,event=None):
         util_button_functions.label_annotation(self, event)
     
     def on_annotation_selected(self, event):
@@ -205,5 +224,21 @@ class MainPage(tk.Frame):
     def is_within_image_bounds(self, annotation):
         return util_annotation_function.is_within_image_bounds(self, annotation)
         
-    def finalize_keypoints(self, event=None):
-        util_annotation_function.finalize_keypoints(self, event=None)
+    def finalise_all(self, event=None):
+        util_annotation_function.finalise_keypoints(self,event)
+        util_annotation_function.finalise_polygon(self,event)
+    
+    def delete_specific_annotation(self,event=None):
+        util_annotation_function.delete_specific_annotation(self,event)
+    
+    def show_listbox_menu(self, event):
+        util_button_functions.show_listbox_menu(self,event)
+    
+    def go_to_image_by_name(self):
+        util_image_functions.go_to_image_by_name(self)
+
+
+
+
+
+    

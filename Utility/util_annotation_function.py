@@ -1,4 +1,5 @@
 import tkinter as tk
+from tkinter import messagebox
 from Utility.annotation_classes import *
 
 def clamp_to_image_bounds(self, x, y):
@@ -48,7 +49,13 @@ def is_within_image_bounds(self, annotation):
             if not (left <= x <= right and top <= y <= bottom):
                 return False
         return True
-
+    elif isinstance(annotation, PolygonAnnotation):
+        points = annotation.coordinates
+        for i in range(0, len(points), 2):
+            x, y = points[i], points[i+1]
+            if not (left <= x <= right and top <= y <= bottom):
+                return False
+        return True
 
     return False  # fallback for unsupported types
 
@@ -79,6 +86,17 @@ def on_press(self, event):
         self.keypoint_canvas_ids.append(dot)
 
         print(f"Placed keypoint at: ({x:.2f}, {y:.2f})")
+    if self.current_annotation_type == PolygonAnnotation:
+        x, y = self.clamp_to_image_bounds(raw_x, raw_y)
+        self.polygon_points.extend([x, y])
+
+        if len(self.polygon_points) >= 4:  # At least 2 points to draw a polygon
+            if self.polygon_preview_id:
+                self.canvas.delete(self.polygon_preview_id)
+            self.polygon_preview_id = self.canvas.create_polygon(
+                self.polygon_points, outline="blue", fill="", width=2, tags="temp_annotation"
+            )
+
 
 
 def on_drag(self, event):
@@ -121,7 +139,7 @@ def on_release(self, event):
     raw_x = self.canvas.canvasx(event.x)
     raw_y = self.canvas.canvasy(event.y)
     end_x, end_y = self.clamp_to_image_bounds(raw_x, raw_y)
-    if self.current_annotation_type == KeypointAnnotation:
+    if self.current_annotation_type == KeypointAnnotation or self.current_annotation_type == PolygonAnnotation:
         return
     
     self.canvas.delete("temp_annotation")
@@ -162,9 +180,7 @@ def on_release(self, event):
     self.annotations.append(annotation)
     self.update_annotation_listbox()
 
-from Utility.annotation_classes import KeypointAnnotation
-
-def finalize_keypoints(self, event=None):
+def finalise_keypoints(self, event=None):
     print("🔍 Finalizing keypoints...")
     print("Current annotation type:", self.current_annotation_type)
     print("Keypoints so far:", self.keypoints)
@@ -201,6 +217,38 @@ def finalize_keypoints(self, event=None):
     self.keypoints = []
     self.keypoint_canvas_ids = []
 
+def finalise_polygon(self, event=None):
+    if self.current_annotation_type != PolygonAnnotation:
+        print("❌ Not in Polygon mode.")
+        return
+
+    if len(self.polygon_points) < 6:
+        print("⚠️ Polygon needs at least 3 points.")
+        return
+
+    annotation = PolygonAnnotation(self.polygon_points)
+
+    if self.is_within_image_bounds(annotation):
+        canvas_id = self.canvas.create_polygon(
+            self.polygon_points,
+            outline="blue",             # You can choose outline color
+            fill="",             # Light red (feels semi-transparent)
+            width=2,
+            tags="annotation"
+        )
+        annotation.canvas_id = canvas_id
+        annotation.coordinates = annotation.normalize_coordinates(self.image.width, self.image.height)
+        self.annotations.append(annotation)
+        self.update_annotation_listbox()
+        print("✅ Polygon finalized and added.")
+    else:
+        print("❌ Polygon out of bounds.")
+
+    # Clear preview and buffers
+    if self.polygon_preview_id:
+        self.canvas.delete(self.polygon_preview_id)
+        self.polygon_preview_id = None
+    self.polygon_points = []
 
 
 def clear_annotation(self):
@@ -219,21 +267,37 @@ def undo_annotation(self, event=None):
     self.update_annotation_listbox()
 
 
-def delete_specific_annotation(self):
-    """Deletes the selected annotation and stores it in the undo stack."""
-    
-    if self.selected_annotation_index is None or self.selected_annotation_index >= len(self.annotations):
-        return  # No valid selection
+def delete_specific_annotation(self, event=None):
+    def do_delete():
+        confirm = messagebox.askyesno(
+            "Confirm Delete",
+            "Are you sure you want to delete this annotation?",
+            parent=self.controller
+        )
+        if not confirm:
+            return
 
-    # Remove the annotation from the list and store it in the undo stack
-    deleted_annotation = self.annotations.pop(self.selected_annotation_index)
-    self.undone_annotations.append(deleted_annotation)  # Store in undo stack
+        index = self.selected_annotation_index
 
-    # Remove the annotation from the canvas
-    self.redraw_annotations()  # Redraw the canvas without the deleted annotation
+        if index is None or index >= len(self.annotations):
+            return
 
-    # Refresh UI
-    self.update_annotation_listbox()
+        deleted_annotation = self.annotations.pop(index)
+        self.undone_annotations.append(deleted_annotation)
+
+        if isinstance(deleted_annotation.canvas_id, list):
+            for canvas_id in deleted_annotation.canvas_id:
+                self.canvas.delete(canvas_id)
+        else:
+            self.canvas.delete(deleted_annotation.canvas_id)
+
+        self.update_annotation_listbox()
+
+    self.after(10, do_delete)
+
+
+
+
 
 
 def redo_annotation(self, event=None):
@@ -282,6 +346,8 @@ def on_annotation_selected(self, event):
         elif isinstance(annotation, KeypointAnnotation):
             for dot_id in annotation.canvas_id or []:
                 self.canvas.itemconfig(dot_id, fill="green")  # Reset to default green
+        elif isinstance(annotation, PolygonAnnotation):
+            self.canvas.itemconfig(annotation.canvas_id, outline="red")
         else:
             self.canvas.itemconfig(annotation.canvas_id, outline="red")
 
@@ -291,12 +357,16 @@ def on_annotation_selected(self, event):
     elif isinstance(selected_annotation, KeypointAnnotation):
         for dot_id in selected_annotation.canvas_id or []:
             self.canvas.itemconfig(dot_id, fill="blue")  # Highlight all keypoints in blue
+    elif isinstance(selected_annotation, PolygonAnnotation):
+        self.canvas.itemconfig(selected_annotation.canvas_id,fill="",outline="blue")
     else:
         self.canvas.itemconfig(selected_annotation.canvas_id, outline="blue")
 
+
 def change_annotation_type(self, event):
     """Changes the annotation type based on user selection."""
-    selected_type = self.annotation_type.get()
-    if selected_type in self.annotation_classes:
-        self.current_annotation_type = self.annotation_classes[selected_type]  # Now stores class reference
+    selected = self.annotation_type.get()  # ✅ Always returns a string
+    if selected in self.annotation_classes:
+        self.current_annotation_type = self.annotation_classes[selected]
+
 

@@ -4,6 +4,17 @@ from Utility.annotation_classes import *
 import json
 import os
 
+ 
+def show_listbox_menu(self, event):
+    widget = event.widget
+    index = widget.nearest(event.y)
+    if index < len(self.annotations):
+        self.selected_annotation_index = index  # ✅ Store index for delete
+        self.annotation_listbox.selection_clear(0, tk.END)
+        self.annotation_listbox.selection_set(index)
+        self.listbox_menu.post(event.x_root, event.y_root)
+
+
 def load_folder(self):
     """Allows user to select an input folder and loads all image files."""
     self.input_folder = filedialog.askdirectory(title="Select Input Folder")
@@ -126,18 +137,25 @@ def load_annotations(self):
                 annotation = FreehandAnnotation(abs_coords)
             
             elif ann_type == "Keypoint" and isinstance(rel_coords, list):
-                norm_coords = []
+                keypoints = []
                 for kp in rel_coords:
-                    if not isinstance(kp, (list, tuple)) or len(kp) < 2:
-                        continue
+                    if isinstance(kp, (list, tuple)) and len(kp) >= 2:
+                        x = kp[0]
+                        y = kp[1]
+                        v = kp[2] if len(kp) > 2 else 2
+                        keypoints.append((x, y, v))
+                annotation = KeypointAnnotation(keypoints)
 
-                    x_norm = kp[0]
-                    y_norm = kp[1]
-                    v = kp[2] if len(kp) > 2 else 2
 
-                    norm_coords.append((x_norm, y_norm, v))
+                
+            elif ann_type == "Polygon" and len(rel_coords) % 2 == 0:
+                abs_coords = []
+                for i in range(0, len(rel_coords), 2):
+                    x = rel_coords[i] * self.image.width
+                    y = rel_coords[i + 1] * self.image.height
+                    abs_coords.extend([x, y])  # flat list of x, y
 
-                annotation = KeypointAnnotation(norm_coords)
+                annotation = PolygonAnnotation(abs_coords)
 
             else:
                 continue  # Skip unrecognized or improperly formatted annotations
@@ -187,6 +205,3 @@ def label_annotation(self, event):
         annotation.label = label  # Update label
         self.update_annotation_listbox()  # Refresh listbox
 
-
-def download_annotations(self):
-    print("hello world")
