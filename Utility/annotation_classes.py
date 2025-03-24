@@ -14,13 +14,18 @@ class Annotation:
             for i, coord in enumerate(self.coordinates)
         ]
 
-    def to_dict(self):
+    def to_dict(self, img_width=None, img_height=None):
+        coords = self.coordinates
+        if img_width and img_height:
+            coords = self.normalize_coordinates(img_width, img_height)
+
         return {
             "id": self.id,
             "type": self.annotation_type,
-            "coordinates": self.coordinates,
+            "coordinates": coords,
             "label": self.label
         }
+
 
     def get_absolute_bounds(self):
         """Should be implemented by subclasses."""
@@ -75,6 +80,21 @@ class KeypointAnnotation(Annotation):
             (x / img_width, y / img_height, v)
             for x, y, v in self.coordinates
         ]
+    
+    def to_dict(self, img_width=None, img_height=None):
+        coords = self.coordinates
+        if img_width and img_height:
+            coords = [
+                [x / img_width, y / img_height, v]
+                for x, y, v in self.coordinates
+            ]
+
+        return {
+            "id": self.id,
+            "type": self.annotation_type,
+            "coordinates": coords,
+            "label": self.label
+        }
 
     def get_absolute_bounds(self):
         xs = [x for x, y, v in self.coordinates]

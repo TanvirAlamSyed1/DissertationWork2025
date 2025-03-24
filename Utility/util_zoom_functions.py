@@ -1,4 +1,4 @@
-from PIL import Image, ImageTk
+from PIL import ImageTk
 import tkinter as tk
 from Utility.annotation_classes import *
 
@@ -27,8 +27,8 @@ def on_mouse_wheel(self, event):
         return
 
     # Update zoom factor
-    self.zoom_factor *= scale_factor
-    self.zoom_factor = max(self.zoom_factor, 1.0)  # Ensure it doesn't go below 1.0
+    self.zoom_factor = max(self.zoom_factor * scale_factor, 1.0)
+
 
     # Apply updated zoom
     self.update_image_size(focus_x, focus_y, scale_factor)
@@ -100,23 +100,28 @@ def redraw_annotation(self, annotation, new_width, new_height):
         if len(rel_coords) < 4:
             return
 
-        # Check if the first few coords are normalized (0-1) or already absolute
-        is_normalized = all(0 <= c <= 1 for c in rel_coords[:6])  # sample check
+        scaled_points = [
+            rel_coords[i] * new_width if i % 2 == 0 else rel_coords[i] * new_height
+            for i in range(len(rel_coords))
+        ]
 
-        if is_normalized:
-            scaled_points = [
-                rel_coords[i] * new_width if i % 2 == 0 else rel_coords[i] * new_height
-                for i in range(len(rel_coords))
-            ]
-            print("[DEBUG] Scaling FreehandAnnotation points (normalized input)")
-        else:
-            scaled_points = rel_coords  # already absolute
-            print("[DEBUG] Using absolute FreehandAnnotation points")
 
         canvas_id = self.canvas.create_line(*scaled_points, fill="red", width=2, tags="annotation")
         annotation.canvas_id = canvas_id
-
-
+    
+    elif isinstance(annotation, KeypointAnnotation):
+        dot_ids = []
+        for x_norm, y_norm, v in annotation.coordinates:
+            print(f"[DEBUG] Redrawing Keypoint: x_norm={x_norm}, y_norm={y_norm}")
+            x = int(x_norm * new_width)
+            y = int(y_norm * new_height)
+            r = 3
+            dot = self.canvas.create_oval(
+                x - r, y - r, x + r, y + r,
+                fill="green", outline="", tags="annotation"
+            )
+            dot_ids.append(dot)
+        annotation.canvas_id = dot_ids
     return annotation
 
 

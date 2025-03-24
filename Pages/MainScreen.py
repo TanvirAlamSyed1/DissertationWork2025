@@ -21,6 +21,8 @@ class MainPage(tk.Frame):
         self.photo = None
         self.annotations = []
         self.undone_annotations = []
+        self.keypoints = []
+        self.keypoint_canvas_ids = []
         self.image_files = []
         self.current_image_index = -1
         self.input_folder = ""
@@ -112,6 +114,7 @@ class MainPage(tk.Frame):
         self.canvas.bind("<ButtonPress-1>", self.on_press)
         self.canvas.bind("<B1-Motion>", self.on_drag)
         self.canvas.bind("<ButtonRelease-1>", self.on_release)
+        self.bind_all("<KeyPress-f>", self.finalize_keypoints)
         self.canvas.bind("<MouseWheel>", self.on_mouse_wheel)  # Windows
         self.canvas.bind("<Button-4>", self.on_mouse_wheel)  # Mac/Linux Scroll Up
         self.canvas.bind("<Button-5>", self.on_mouse_wheel)  # Mac/Linux Scroll Down
@@ -202,4 +205,5 @@ class MainPage(tk.Frame):
     def is_within_image_bounds(self, annotation):
         return util_annotation_function.is_within_image_bounds(self, annotation)
         
-       
+    def finalize_keypoints(self, event=None):
+        util_annotation_function.finalize_keypoints(self, event=None)

@@ -1,7 +1,6 @@
 import tkinter as tk
 from tkinter import filedialog, messagebox
 from Utility.annotation_classes import *
-from tkinter import simpledialog
 import json
 import os
 
@@ -37,7 +36,7 @@ def save_annotations(self):
 
     img_width, img_height = self.image.width, self.image.height
 
-    # Prepare annotation data
+    # Prepare annotation data 
     annotations_data = {
         "image_name": image_name,
         "image_width": img_width,
@@ -46,12 +45,9 @@ def save_annotations(self):
     }
 
     for annotation in self.annotations:
-        annotations_data["annotations"].append({
-            "id": annotation.id,  # Store the annotation ID
-            "type": annotation.annotation_type,
-            "coordinates": annotation.coordinates,  # Already normalized
-            "label": annotation.label
-        })
+        annotations_data["annotations"].append(
+            annotation.to_dict(img_width, img_height)
+        )
 
     # Save to JSON file
     try:
@@ -60,6 +56,7 @@ def save_annotations(self):
         messagebox.showinfo("Saved", f"Annotations saved to {annotations_file}")
     except IOError as e:
         messagebox.showerror("Error", f"Failed to save annotations: {e}")
+
 
 def load_annotations(self):
     """Loads annotations for the currently displayed image."""
@@ -74,7 +71,6 @@ def load_annotations(self):
     if not os.path.exists(annotations_file):
         messagebox.showwarning("Not Found", f"No annotations found for {image_name}")
         return
-
     try:
         with open(annotations_file, "r") as f:
             annotations_data = json.load(f)
@@ -104,24 +100,21 @@ def load_annotations(self):
         if ann_type and rel_coords:
             if ann_type == "Rectangle" and len(rel_coords) == 4:
                 abs_coords = [
-                    rel_coords[0] * canvas_width,
-                    rel_coords[1] * canvas_height,
-                    rel_coords[2] * canvas_width,
-                    rel_coords[3] * canvas_height
+                    rel_coords[0] * self.image.width,
+                    rel_coords[1] * self.image.height,
+                    rel_coords[2] * self.image.width,
+                    rel_coords[3] * self.image.height
                 ]
-
-                annotation = RectangleAnnotation(*rel_coords)
+                annotation = RectangleAnnotation(*abs_coords)
 
             elif ann_type == "Ellipse" and len(rel_coords) == 4:
                 abs_coords = [
-                    rel_coords[0] * canvas_width,
-                    rel_coords[1] * canvas_height,
-                    rel_coords[2] * canvas_width,
-                    rel_coords[3] * canvas_height
+                    rel_coords[0] * self.image.width,
+                    rel_coords[1] * self.image.height,
+                    rel_coords[2] * self.image.width,
+                    rel_coords[3] * self.image.height
                 ]
-
-                annotation = EllipseAnnotation(*rel_coords)
-
+                annotation = EllipseAnnotation(*abs_coords)
 
             elif ann_type == "Freehand" and len(rel_coords) % 2 == 0:
                 abs_coords = []
@@ -131,8 +124,20 @@ def load_annotations(self):
                     abs_coords.extend([x, y])  # ✅ creates flat list
 
                 annotation = FreehandAnnotation(abs_coords)
+            
+            elif ann_type == "Keypoint" and isinstance(rel_coords, list):
+                norm_coords = []
+                for kp in rel_coords:
+                    if not isinstance(kp, (list, tuple)) or len(kp) < 2:
+                        continue
 
+                    x_norm = kp[0]
+                    y_norm = kp[1]
+                    v = kp[2] if len(kp) > 2 else 2
 
+                    norm_coords.append((x_norm, y_norm, v))
+
+                annotation = KeypointAnnotation(norm_coords)
 
             else:
                 continue  # Skip unrecognized or improperly formatted annotations

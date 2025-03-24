@@ -43,10 +43,14 @@ def is_within_image_bounds(self, annotation):
             if not (left <= x <= right and top <= y <= bottom):
                 return False
         return True
+    elif isinstance(annotation, KeypointAnnotation):
+        for x, y, v in annotation.coordinates:
+            if not (left <= x <= right and top <= y <= bottom):
+                return False
+        return True
 
 
     return False  # fallback for unsupported types
-
 
 
 def on_press(self, event):
@@ -60,6 +64,22 @@ def on_press(self, event):
             self.start_x, self.start_y, self.start_x, self.start_y,
             fill="red", width=2, tags="annotation"
         )
+    
+    if self.current_annotation_type == KeypointAnnotation:
+        print(f"Current annotation type: {self.current_annotation_type}")
+        x, y = self.clamp_to_image_bounds(raw_x, raw_y)
+
+        self.keypoints.append((x, y, 2))
+
+        r = 3
+        dot = self.canvas.create_oval(
+            x - r, y - r, x + r, y + r,
+            fill="green", outline="", tags="temp_annotation"
+        )
+        self.keypoint_canvas_ids.append(dot)
+
+        print(f"Placed keypoint at: ({x:.2f}, {y:.2f})")
+
 
 def on_drag(self, event):
     """Handles drawing while dragging."""
@@ -101,9 +121,11 @@ def on_release(self, event):
     raw_x = self.canvas.canvasx(event.x)
     raw_y = self.canvas.canvasy(event.y)
     end_x, end_y = self.clamp_to_image_bounds(raw_x, raw_y)
-
-
+    if self.current_annotation_type == KeypointAnnotation:
+        return
+    
     self.canvas.delete("temp_annotation")
+
     img_width, img_height = self.image.width, self.image.height
 
     annotation = None
@@ -121,8 +143,7 @@ def on_release(self, event):
             x1, y1, x2, y2,
             outline="red", tags="annotation"
         )
-
-
+    
     elif self.current_annotation_type == FreehandAnnotation:
         points = self.canvas.coords(self.current_annotation)
         if (len(points) <= 4):
@@ -140,6 +161,47 @@ def on_release(self, event):
     annotation.canvas_id = canvas_id
     self.annotations.append(annotation)
     self.update_annotation_listbox()
+
+from Utility.annotation_classes import KeypointAnnotation
+
+def finalize_keypoints(self, event=None):
+    print("🔍 Finalizing keypoints...")
+    print("Current annotation type:", self.current_annotation_type)
+    print("Keypoints so far:", self.keypoints)
+
+    if self.current_annotation_type != KeypointAnnotation:
+        print("❌ Not in Keypoint mode.")
+        return
+
+    if not self.keypoints:
+        print("⚠️ No keypoints to finalize.")
+        return
+
+    annotation = KeypointAnnotation(self.keypoints)
+
+    if self.is_within_image_bounds(annotation):
+        annotation.canvas_id = self.keypoint_canvas_ids.copy()  # 🔧 Save canvas IDs
+
+
+        print("📦 Before appending, annotations:", [a.annotation_type for a in self.annotations])
+        self.annotations.append(annotation)
+        print("📦 Appended annotation:", annotation.annotation_type)
+        print("📦 After append, annotations:", [a.annotation_type for a in self.annotations])
+
+        self.update_annotation_listbox()
+        print(f"✅ Keypoint group finalized with {len(self.keypoints)} points.")
+    else:
+        print("❌ Annotation not within bounds. Not added.")
+
+    # Retag visual dots
+    for dot_id in self.keypoint_canvas_ids:
+        self.canvas.itemconfig(dot_id, tags="annotation")
+
+    # Clear temporary buffers
+    self.keypoints = []
+    self.keypoint_canvas_ids = []
+
+
 
 def clear_annotation(self):
     """Clears all annotations."""
@@ -165,10 +227,10 @@ def delete_specific_annotation(self):
 
     # Remove the annotation from the list and store it in the undo stack
     deleted_annotation = self.annotations.pop(self.selected_annotation_index)
-    self.undone_annotations.append(deleted_annotation)  # ✅ Store in undo stack
+    self.undone_annotations.append(deleted_annotation)  # Store in undo stack
 
     # Remove the annotation from the canvas
-    self.redraw_annotations()  # ✅ Redraw the canvas without the deleted annotation
+    self.redraw_annotations()  # Redraw the canvas without the deleted annotation
 
     # Refresh UI
     self.update_annotation_listbox()
@@ -187,40 +249,54 @@ def update_annotation_listbox(self):
     """Updates the Listbox with annotation types and labels."""
     self.annotation_listbox.delete(0, tk.END)
 
-    for index, annotation in enumerate(self.annotations):
-        self.annotation_listbox.insert(tk.END, f"{index + 1}. {annotation.annotation_type}: {annotation.label}")
+    print("📋 Updating listbox...")  # Debug
 
-    # Bind the selection event to highlight the selected annotation
+    for index, annotation in enumerate(self.annotations):
+        print(f" - Annotation {index}: {annotation.annotation_type}")  # Debug
+
+        if annotation.annotation_type == "Keypoint":
+            label = f"{index + 1}. Keypoints ({len(annotation.coordinates)} points)"
+        else:
+            label = f"{index + 1}. {annotation.annotation_type}: {annotation.label}"
+
+        print("Inserting into listbox:", label)  # Debug
+        self.annotation_listbox.insert(tk.END, label)
+
+    self.annotation_listbox.update_idletasks()  # Forces UI update
     self.annotation_listbox.bind("<<ListboxSelect>>", self.on_annotation_selected)
+
 
 def on_annotation_selected(self, event):
     """Highlights the selected annotation on the canvas."""
     selected_index = self.annotation_listbox.curselection()
-
     if not selected_index:
-        return  # No selection made
+        return
 
-    selected_index = selected_index[0]  # Get the first selected item index
-    selected_annotation = self.annotations[selected_index]  # Get the annotation object
+    selected_index = selected_index[0]
+    selected_annotation = self.annotations[selected_index]
 
     # Reset all annotations to default color
     for annotation in self.annotations:
         if isinstance(annotation, FreehandAnnotation):
-            self.canvas.itemconfig(annotation.canvas_id, fill="red")  # ✅ Freehand uses 'fill'
+            self.canvas.itemconfig(annotation.canvas_id, fill="red")
+        elif isinstance(annotation, KeypointAnnotation):
+            for dot_id in annotation.canvas_id or []:
+                self.canvas.itemconfig(dot_id, fill="green")  # Reset to default green
         else:
-            self.canvas.itemconfig(annotation.canvas_id, outline="red")  # ✅ Other shapes use 'outline'
+            self.canvas.itemconfig(annotation.canvas_id, outline="red")
 
     # Highlight the selected annotation
     if isinstance(selected_annotation, FreehandAnnotation):
-        self.canvas.itemconfig(selected_annotation.canvas_id, fill="blue")  # ✅ Highlight Freehand in blue
+        self.canvas.itemconfig(selected_annotation.canvas_id, fill="blue")
+    elif isinstance(selected_annotation, KeypointAnnotation):
+        for dot_id in selected_annotation.canvas_id or []:
+            self.canvas.itemconfig(dot_id, fill="blue")  # Highlight all keypoints in blue
     else:
-        self.canvas.itemconfig(selected_annotation.canvas_id, outline="blue")  # ✅ Highlight other shapes in blue
-
-
+        self.canvas.itemconfig(selected_annotation.canvas_id, outline="blue")
 
 def change_annotation_type(self, event):
     """Changes the annotation type based on user selection."""
     selected_type = self.annotation_type.get()
     if selected_type in self.annotation_classes:
-        self.current_annotation_type = self.annotation_classes[selected_type]  # ✅ Now stores class reference
+        self.current_annotation_type = self.annotation_classes[selected_type]  # Now stores class reference
 
