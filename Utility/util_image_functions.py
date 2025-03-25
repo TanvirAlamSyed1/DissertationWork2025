@@ -85,7 +85,7 @@ def go_to_image_by_name(self):
 
     messagebox.showwarning("Not Found", f"No image found matching: {image_name}", parent=self.controller)
 
-def save_(self):
+def save_image(self):
     if not self.image or self.current_image_index == -1:
         messagebox.showwarning("No Image", "Please load an image first.", parent=self.controller)
         return
