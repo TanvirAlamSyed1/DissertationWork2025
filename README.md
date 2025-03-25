@@ -1,8 +1,60 @@
-# DissertationWork2025
-11/03/2025 Update
+# 🖍️ Image Annotation Tool
 
-To Do List
-- The UI isn't fully finished yet, and not on par to the design I created
-- Still need to allow users to add labels onto their annotations
-- Still need to make sure the annotations remain the same on the screen when zooming in.
-- Still Need to make sure the application is downloadable using a .exe folder
+A cross-platform desktop application for annotating images with bounding boxes, ellipses, polygons, freehand lines, and keypoints — built with **Python + Tkinter**.
+
+---
+
+## 🚀 Features
+
+- 📂 Load a folder of images
+- 🖼️ Annotate using:
+  - Rectangles
+  - Ellipses
+  - Freehand lines
+  - Polygons
+  - Keypoints
+- 💾 Save annotations per image (JSON)
+- 📷 Export annotated images (PNG)
+- 🔁 Undo/redo support
+- 🔍 Zoom in/out using mouse scroll
+- 🔎 Search by image name
+- 🎨 Color-coded visual feedback on canvas
+- ✅ Bound-checking ensures annotations stay inside image
+- 🧭 Keyboard shortcut to finalize annotations (`f`)
+- 💬 Context menu to label/delete annotations
+- 🙅 Option to turn off repeated confirmation messages
+
+---
+
+## 📦 Installation
+
+1. clone this repo and install pillow - 'pip install pillow'
+2. run main.py and let the application run
+
+## 🛠️ How to Use
+1. Run app 'Python main.py'
+2. From the UI:
+   - Click "Load Folder" to select your image folder.
+   - Use the dropdown to select annotation type.
+   - Annotate directly on the canvas using your mouse.
+   - Save annotations with "Save Annotations" button.
+   - Export the annotated image using "Export Annotated Image".
+
+⌨️ Shortcuts
+Finalize keypoint/polygon annotation -	f
+Undo	Ctrl + Z
+Redo	Ctrl + Y
+
+📸 Supported Formats
+- .jpg
+- .jpeg
+- .png
+- .gif
+- .bmp
+
+✅ To-Do / Improvements
+ - Semantic Segmentation
+ - YOLO / COCO format export
+
+👩‍💻 Author
+Made with 💙 by Tanvir Alam Syed
