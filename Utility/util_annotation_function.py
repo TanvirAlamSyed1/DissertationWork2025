@@ -3,30 +3,33 @@ from tkinter import messagebox
 from Utility.annotation_classes import *
 
 def clamp_to_image_bounds(self, x, y):
-    """Restrict x and y to be within the image bounds on canvas."""
+    """Restrict x and y to be within the zoomed image bounds on canvas."""
     if not hasattr(self, "image") or self.image is None:
-        return x, y  # Fallback in case image is not set
+        return x, y
 
     left = self.image_x
     top = self.image_y
-    right = left + self.image.width
-    bottom = top + self.image.height
+    right = left + (self.image.width * self.zoom_factor)
+    bottom = top + (self.image.height * self.zoom_factor)
 
     x = max(left, min(x, right))
     y = max(top, min(y, bottom))
     return x, y
 
-    return x, y
 
 def is_within_image_bounds(self, annotation):
-    """Check if an annotation is entirely within image bounds on canvas."""
+    """Check if an annotation is entirely within zoomed image bounds on canvas."""
     if not self.image:
         return False
 
+    zoomed_width = self.image.width * self.zoom_factor
+    zoomed_height = self.image.height * self.zoom_factor
+
     left = self.image_x
     top = self.image_y
-    right = left + self.image.width
-    bottom = top + self.image.height
+    right = left + zoomed_width
+    bottom = top + zoomed_height
+
 
     # Rectangle or Circle — use bounding box
     if isinstance(annotation, RectangleAnnotation):
@@ -62,6 +65,7 @@ def is_within_image_bounds(self, annotation):
 
 def on_press(self, event):
     """Handles the start of an annotation."""
+    
     raw_x = self.canvas.canvasx(event.x)
     raw_y = self.canvas.canvasy(event.y)
     self.start_x, self.start_y = self.clamp_to_image_bounds(raw_x, raw_y)
@@ -71,13 +75,18 @@ def on_press(self, event):
             self.start_x, self.start_y, self.start_x, self.start_y,
             fill="red", width=2, tags="annotation"
         )
-    
-    if self.current_annotation_type == KeypointAnnotation:
-        print(f"Current annotation type: {self.current_annotation_type}")
+
+    elif self.current_annotation_type == KeypointAnnotation:
         x, y = self.clamp_to_image_bounds(raw_x, raw_y)
 
-        self.keypoints.append((x, y, 2))
+        # Capture current zoomed dimensions at the time of placement
+        zoomed_width = self.image.width * self.zoom_factor
+        zoomed_height = self.image.height * self.zoom_factor
 
+        # Defer normalization — store full placement context
+        self.keypoints.append((x, y, 2, zoomed_width, zoomed_height))
+
+        # Draw dot on canvas at current zoom level
         r = 3
         dot = self.canvas.create_oval(
             x - r, y - r, x + r, y + r,
@@ -85,17 +94,22 @@ def on_press(self, event):
         )
         self.keypoint_canvas_ids.append(dot)
 
-        print(f"Placed keypoint at: ({x:.2f}, {y:.2f})")
-    if self.current_annotation_type == PolygonAnnotation:
+    elif self.current_annotation_type == PolygonAnnotation:
         x, y = self.clamp_to_image_bounds(raw_x, raw_y)
         self.polygon_points.extend([x, y])
 
-        if len(self.polygon_points) >= 4:  # At least 2 points to draw a polygon
+        if len(self.polygon_points) >= 4:  # At least 2 points to draw
             if self.polygon_preview_id:
                 self.canvas.delete(self.polygon_preview_id)
+
             self.polygon_preview_id = self.canvas.create_polygon(
-                self.polygon_points, outline="blue", fill="", width=2, tags="temp_annotation"
+                self.polygon_points,
+                outline="blue",
+                fill="",
+                width=2,
+                tags="temp_annotation"
             )
+
 
 
 
@@ -139,15 +153,18 @@ def on_release(self, event):
     raw_x = self.canvas.canvasx(event.x)
     raw_y = self.canvas.canvasy(event.y)
     end_x, end_y = self.clamp_to_image_bounds(raw_x, raw_y)
-    if self.current_annotation_type == KeypointAnnotation or self.current_annotation_type == PolygonAnnotation:
+
+    if self.current_annotation_type in [KeypointAnnotation, PolygonAnnotation]:
         return
-    
+
     self.canvas.delete("temp_annotation")
 
-    img_width, img_height = self.image.width, self.image.height
+    # ✅ Use zoomed dimensions for normalization
+    zoomed_width = self.image.width * self.zoom_factor
+    zoomed_height = self.image.height * self.zoom_factor
 
     annotation = None
-    canvas_id = None  # Store Canvas ID for selection feature
+    canvas_id = None
 
     if self.current_annotation_type == RectangleAnnotation:
         annotation = RectangleAnnotation(self.start_x, self.start_y, end_x, end_y)
@@ -157,65 +174,25 @@ def on_release(self, event):
         x1, y1 = self.start_x, self.start_y
         x2, y2 = end_x, end_y
         annotation = EllipseAnnotation(x1, y1, x2, y2)
-        canvas_id = self.canvas.create_oval(
-            x1, y1, x2, y2,
-            outline="red", tags="annotation"
-        )
-    
+        canvas_id = self.canvas.create_oval(x1, y1, x2, y2, outline="red", tags="annotation")
+
     elif self.current_annotation_type == FreehandAnnotation:
         points = self.canvas.coords(self.current_annotation)
-        if (len(points) <= 4):
+        if len(points) <= 4:
             return
         annotation = FreehandAnnotation(points)
-        canvas_id = self.current_annotation  # Freehand already exists on the canvas
+        canvas_id = self.current_annotation
 
-    # ⛔️ Validate the annotation before keeping it
+    # ❌ Skip invalid annotations
     if annotation and not self.is_within_image_bounds(annotation):
-        self.canvas.delete(canvas_id)  # Remove from canvas
-        return  # Skip saving and updating the listbox
+        self.canvas.delete(canvas_id)
+        return
 
-    # ✅ Annotation is valid; keep it
-    annotation.coordinates = annotation.normalize_coordinates(img_width, img_height)
+    # ✅ Normalize to zoomed image size
+    annotation.coordinates = annotation.normalize_coordinates(zoomed_width, zoomed_height)
     annotation.canvas_id = canvas_id
     self.annotations.append(annotation)
     self.update_annotation_listbox()
-
-def finalise_keypoints(self, event=None):
-    print("🔍 Finalizing keypoints...")
-    print("Current annotation type:", self.current_annotation_type)
-    print("Keypoints so far:", self.keypoints)
-
-    if self.current_annotation_type != KeypointAnnotation:
-        print("❌ Not in Keypoint mode.")
-        return
-
-    if not self.keypoints:
-        print("⚠️ No keypoints to finalize.")
-        return
-
-    annotation = KeypointAnnotation(self.keypoints)
-
-    if self.is_within_image_bounds(annotation):
-        annotation.canvas_id = self.keypoint_canvas_ids.copy()  # 🔧 Save canvas IDs
-
-
-        print("📦 Before appending, annotations:", [a.annotation_type for a in self.annotations])
-        self.annotations.append(annotation)
-        print("📦 Appended annotation:", annotation.annotation_type)
-        print("📦 After append, annotations:", [a.annotation_type for a in self.annotations])
-
-        self.update_annotation_listbox()
-        print(f"✅ Keypoint group finalized with {len(self.keypoints)} points.")
-    else:
-        print("❌ Annotation not within bounds. Not added.")
-
-    # Retag visual dots
-    for dot_id in self.keypoint_canvas_ids:
-        self.canvas.itemconfig(dot_id, tags="annotation")
-
-    # Clear temporary buffers
-    self.keypoints = []
-    self.keypoint_canvas_ids = []
 
 def finalise_polygon(self, event=None):
     if self.current_annotation_type != PolygonAnnotation:
@@ -231,24 +208,65 @@ def finalise_polygon(self, event=None):
     if self.is_within_image_bounds(annotation):
         canvas_id = self.canvas.create_polygon(
             self.polygon_points,
-            outline="blue",             # You can choose outline color
-            fill="",             # Light red (feels semi-transparent)
+            outline="blue",
+            fill="",
             width=2,
             tags="annotation"
         )
         annotation.canvas_id = canvas_id
-        annotation.coordinates = annotation.normalize_coordinates(self.image.width, self.image.height)
+
+        # ✅ Normalize using zoomed dimensions
+        zoomed_width = self.image.width * self.zoom_factor
+        zoomed_height = self.image.height * self.zoom_factor
+        annotation.coordinates = annotation.normalize_coordinates(zoomed_width, zoomed_height)
+
         self.annotations.append(annotation)
         self.update_annotation_listbox()
         print("✅ Polygon finalized and added.")
     else:
         print("❌ Polygon out of bounds.")
 
-    # Clear preview and buffers
     if self.polygon_preview_id:
         self.canvas.delete(self.polygon_preview_id)
         self.polygon_preview_id = None
     self.polygon_points = []
+
+def finalise_keypoints(self, event=None):
+    if self.current_annotation_type != KeypointAnnotation:
+        return
+
+    if not self.keypoints:
+        return
+
+    normalized_keypoints = []
+
+    for kp in self.keypoints:
+        if len(kp) == 5:
+            # New format: (x, y, v, zoomed_w, zoomed_h)
+            x, y, v, w, h = kp
+            x_norm = x / w
+            y_norm = y / h
+            normalized_keypoints.append((x_norm, y_norm, v))
+        else:
+            # Fallback for old data structure (already normalized)
+            x, y, v = kp
+            normalized_keypoints.append((x, y, v))
+
+    annotation = KeypointAnnotation(normalized_keypoints)
+
+    if self.is_within_image_bounds(annotation):
+        annotation.canvas_id = self.keypoint_canvas_ids.copy()
+        self.annotations.append(annotation)
+        self.update_annotation_listbox()
+    else:
+        print("❌ Keypoints out of bounds. Not added.")
+
+    for dot_id in self.keypoint_canvas_ids:
+        self.canvas.itemconfig(dot_id, tags="annotation")
+
+    self.keypoints = []
+    self.keypoint_canvas_ids = []
+
 
 
 def clear_annotation(self):
@@ -294,11 +312,6 @@ def delete_specific_annotation(self, event=None):
         self.update_annotation_listbox()
 
     self.after(10, do_delete)
-
-
-
-
-
 
 def redo_annotation(self, event=None):
     """Redoes the last undone annotation."""

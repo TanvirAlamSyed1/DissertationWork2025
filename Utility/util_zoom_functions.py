@@ -25,11 +25,8 @@ def on_mouse_wheel(self, event):
     # Prevent excessive zooming out
     if not zoom_in and self.zoom_factor <= 1.0:
         return
-
     # Update zoom factor
     self.zoom_factor = max(self.zoom_factor * scale_factor, 1.0)
-
-
     # Apply updated zoom
     self.update_image_size(focus_x, focus_y, scale_factor)
 
@@ -82,6 +79,9 @@ def redraw_annotation(self, annotation, new_width, new_height):
 
     ann_type = annotation.annotation_type
     rel_coords = annotation.coordinates
+    new_width = int(self.image.width * self.zoom_factor)
+    new_height = int(self.image.height * self.zoom_factor)
+
 
     if isinstance(annotation, RectangleAnnotation):
         x1, y1, x2, y2 = [rel_coords[i] * new_width if i % 2 == 0 else rel_coords[i] * new_height for i in range(4)]
@@ -110,7 +110,7 @@ def redraw_annotation(self, annotation, new_width, new_height):
     elif isinstance(annotation, KeypointAnnotation):
         dot_ids = []
         for x_norm, y_norm, v in annotation.coordinates:
-            x = x_norm * new_width
+            x = x_norm * new_width  # ✅ correct — new_width is zoomed width
             y = y_norm * new_height
             r = 3
             dot = self.canvas.create_oval(
@@ -120,7 +120,6 @@ def redraw_annotation(self, annotation, new_width, new_height):
             dot_ids.append(dot)
         annotation.canvas_id = dot_ids
 
-        
     elif isinstance(annotation, PolygonAnnotation):
         if len(rel_coords) >= 6:
             scaled_points = [
