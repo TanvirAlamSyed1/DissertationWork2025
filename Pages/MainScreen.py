@@ -130,9 +130,15 @@ class MainPage(tk.Frame):
         self.canvas.bind("<Button-4>", self.on_mouse_wheel)
         self.canvas.bind("<Button-5>", self.on_mouse_wheel)
 
-        self.bind_all("<KeyPress-f>", self.finalise_all)
+        self.bind_all("<KeyPress-d>", self.finalise_all)
         self.bind_all("<Control-z>", self.undo_annotation)
         self.bind_all("<Control-y>", self.redo_annotation)
+        self.bind_all("<Control-s>", self.save_annotation)
+        self.bind_all("<Control-l>", self.load_annotation)
+        self.bind_all("<Control-n>", self.next_image)
+        self.bind_all("<Control-p>", self.prev_image)
+        self.bind_all("<Control-f>",self.load_folder)
+
 
     # ----- Delegated utility calls below -----
 
@@ -150,15 +156,15 @@ class MainPage(tk.Frame):
     def clear_annotation(self): util_annotation_function.clear_annotation(self)
     def undo_annotation(self, event=None): util_annotation_function.undo_annotation(self, event)
     def redo_annotation(self, event=None): util_annotation_function.redo_annotation(self, event)
-    def load_folder(self): util_button_functions.load_folder(self)
+    def load_folder(self,event=None): util_button_functions.load_folder(self,event)
     def load_image(self): util_image_functions.load_image(self)
-    def prev_image(self): util_image_functions.prev_image(self)
-    def load_annotation(self): util_button_functions.load_annotations(self)
-    def next_image(self): util_image_functions.next_image(self)
+    def prev_image(self,event=None): util_image_functions.prev_image(self,event)
+    def load_annotation(self,event): util_button_functions.load_annotations(self,event)
+    def next_image(self,event=None): util_image_functions.next_image(self,event)
     def on_mouse_wheel(self, event): util_zoom_functions.on_mouse_wheel(self, event)
     def update_image_size(self, fx, fy, scale): util_zoom_functions.update_image_size(self, fx, fy, scale)
     def download_annotations(self): util_button_functions.download_annotations(self)
-    def save_annotation(self): util_button_functions.save_annotations(self)
+    def save_annotation(self,event=None): util_button_functions.save_annotations(self,event)
     def change_annotation_type(self, event): util_annotation_function.change_annotation_type(self, event)
     def redraw_annotations(self): util_button_functions.redraw_annotations(self)
     def redraw_annotation(self, ann, w, h): return util_zoom_functions.redraw_annotation(self, ann, w, h)

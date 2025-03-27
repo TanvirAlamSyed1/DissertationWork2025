@@ -87,7 +87,7 @@ def on_press(self, event):
         self.keypoints.append((x, y, 2, zoomed_width, zoomed_height))
 
         # Draw dot on canvas at current zoom level
-        r = 3
+        r = 1
         dot = self.canvas.create_oval(
             x - r, y - r, x + r, y + r,
             fill="green", outline="", tags="temp_annotation"
@@ -109,8 +109,6 @@ def on_press(self, event):
                 width=2,
                 tags="temp_annotation"
             )
-
-
 
 
 def on_drag(self, event):
@@ -266,7 +264,6 @@ def finalise_keypoints(self, event=None):
 
     self.keypoints = []
     self.keypoint_canvas_ids = []
-
 
 
 def clear_annotation(self):

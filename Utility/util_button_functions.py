@@ -15,7 +15,7 @@ def show_listbox_menu(self, event):
         self.listbox_menu.post(event.x_root, event.y_root)
 
 
-def load_folder(self):
+def load_folder(self,event=None):
     """Allows user to select an input folder and loads all image files."""
     self.input_folder = filedialog.askdirectory(title="Select Input Folder")
     if self.input_folder:
@@ -31,7 +31,7 @@ def load_folder(self):
         else:
             messagebox.showwarning("Warning", "No image files found in the selected folder.")
 
-def save_annotations(self):
+def save_annotations(self,event=None):
     """Saves all annotations for the current image as a JSON file."""
     if not self.image_files or self.current_image_index == -1:
         messagebox.showwarning("No Image", "No image is currently loaded.")
@@ -69,7 +69,7 @@ def save_annotations(self):
         messagebox.showerror("Error", f"Failed to save annotations: {e}")
 
 
-def load_annotations(self):
+def load_annotations(self,event=None):
     """Loads annotations for the currently displayed image."""
     if not self.image_files or self.current_image_index == -1:
         messagebox.showwarning("No Image", "No image is currently loaded.")

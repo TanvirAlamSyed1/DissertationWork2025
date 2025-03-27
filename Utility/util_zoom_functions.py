@@ -36,42 +36,69 @@ def update_image_size(self, focus_x=None, focus_y=None, scale_factor=1.0):
     if not self.image:
         return
 
-    # Get the current scroll position BEFORE zooming
-    x_scroll, y_scroll = self.canvas.xview(), self.canvas.yview()
-
-    # Calculate new dimensions while preserving aspect ratio
+    # Calculate new image dimensions
     new_width = int(self.image.width * self.zoom_factor)
     new_height = int(self.image.height * self.zoom_factor)
     resized_image = self.image.resize((new_width, new_height))
-
     self.photo = ImageTk.PhotoImage(resized_image)
 
     # Update canvas scroll region
     self.canvas.config(scrollregion=(0, 0, new_width, new_height))
 
-    # Update canvas image
+    # Redraw image
     self.canvas.delete("image")
     self.canvas.create_image(0, 0, anchor=tk.NW, image=self.photo, tags="image")
 
-    # Adjust scrollbars to maintain focus on the cursor position
+    # Maintain cursor-centered zoom focus
     if focus_x is not None and focus_y is not None:
         bbox = self.canvas.bbox("image")
         if bbox:
-            # Compute new scroll position to keep the cursor focus
             new_x_scroll = focus_x * (bbox[2] - bbox[0]) - (self.canvas.winfo_width() / 2)
             new_y_scroll = focus_y * (bbox[3] - bbox[1]) - (self.canvas.winfo_height() / 2)
 
-            # Convert to valid scroll fraction (0-1 range) with clamping
             x_scroll = max(0, min(new_x_scroll / (bbox[2] - bbox[0]), 1.0))
             y_scroll = max(0, min(new_y_scroll / (bbox[3] - bbox[1]), 1.0))
 
             self.canvas.xview_moveto(x_scroll)
             self.canvas.yview_moveto(y_scroll)
 
-    # Clear old annotations and redraw them at new scaled positions
+    # Redraw finalized annotations
     self.canvas.delete("annotation")
     for annotation in self.annotations:
         self.redraw_annotation(annotation, new_width, new_height)
+
+    # ✅ Redraw temporary annotations (in-progress keypoints, polygons, etc.)
+    self.redraw_temp_annotations()
+
+        
+def redraw_temp_annotations(self):
+    """Redraw in-progress keypoints or polygons during zoom."""
+    self.canvas.delete("temp_annotation")
+
+    zoomed_width = self.image.width * self.zoom_factor
+    zoomed_height = self.image.height * self.zoom_factor
+
+    if self.current_annotation_type == KeypointAnnotation:
+        for x_norm, y_norm, _ in self.keypoints:
+            x = x_norm * zoomed_width
+            y = y_norm * zoomed_height
+            r = 3
+            self.canvas.create_oval(
+                x - r, y - r, x + r, y + r,
+                fill="green", outline="", tags="temp_annotation"
+            )
+
+    elif self.current_annotation_type == PolygonAnnotation and len(self.polygon_points) >= 4:
+        scaled_points = []
+        for i in range(0, len(self.polygon_points), 2):
+            x = self.polygon_points[i] * zoomed_width
+            y = self.polygon_points[i+1] * zoomed_height
+            scaled_points.extend([x, y])
+
+        self.polygon_preview_id = self.canvas.create_polygon(
+            scaled_points, outline="blue", fill="", width=2, tags="temp_annotation"
+        )
+
 
 
 def redraw_annotation(self, annotation, new_width, new_height):
@@ -112,7 +139,7 @@ def redraw_annotation(self, annotation, new_width, new_height):
         for x_norm, y_norm, v in annotation.coordinates:
             x = x_norm * new_width  # ✅ correct — new_width is zoomed width
             y = y_norm * new_height
-            r = 3
+            r = 1
             dot = self.canvas.create_oval(
                 x - r, y - r, x + r, y + r,
                 fill="green", outline="", tags="annotation"

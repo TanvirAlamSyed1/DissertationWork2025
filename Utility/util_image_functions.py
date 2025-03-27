@@ -47,9 +47,7 @@ def load_image(self):
         self.clear_annotation()
 
 
-
-
-def next_image(self):
+def next_image(self,event=None):
     """Loads the next image at its default size and resets zoom."""
     if self.current_image_index < len(self.image_files) - 1:
         self.current_image_index += 1
@@ -58,7 +56,7 @@ def next_image(self):
         self.keypoint_canvas_ids = []
         self.load_image()
 
-def prev_image(self):
+def prev_image(self,event=None):
     """Loads the previous image at its default size and resets zoom."""
     if self.current_image_index > 0:
         self.current_image_index -= 1
