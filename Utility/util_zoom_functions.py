@@ -4,31 +4,63 @@ from Utility.annotation_classes import *
 
 def on_mouse_wheel(self, event):
     """Handles zooming in and out while keeping the cursor at the same position."""
-
-    # Get mouse position relative to the canvas
     mouse_x = self.canvas.canvasx(event.x)
     mouse_y = self.canvas.canvasy(event.y)
 
-    # Get the bounding box of the image
     bbox = self.canvas.bbox("image")
     if not bbox:
-        return  # Prevents crashes if no image is loaded
+        return
 
-    # Calculate the focus point relative to the image size
     focus_x = (mouse_x - bbox[0]) / (bbox[2] - bbox[0])
     focus_y = (mouse_y - bbox[1]) / (bbox[3] - bbox[1])
 
-    # Determine zoom direction
     zoom_in = event.delta > 0
     scale_factor = 1.1 if zoom_in else (1 / 1.1)
 
-    # Prevent excessive zooming out
     if not zoom_in and self.zoom_factor <= 1.0:
         return
-    # Update zoom factor
+
     self.zoom_factor = max(self.zoom_factor * scale_factor, 1.0)
-    # Apply updated zoom
     self.update_image_size(focus_x, focus_y, scale_factor)
+
+    # ✅ Re-draw live keypoints AFTER zoom, don't finalize them
+    if (self.current_annotation_type in [KeypointAnnotation, PolygonAnnotation] and (self.keypoints or self.polygon_points)):
+        self.redraw_temp_annotations()
+
+        
+
+    
+def redraw_temp_annotations(self):
+    """Redraw any in-progress temp annotations (keypoints, polygon, etc.) after zoom."""
+    self.canvas.delete("temp_annotation")
+
+    # 🟢 Redraw keypoints
+    for x_img, y_img, v in self.keypoints:
+        x_canvas = self.image_x + x_img * self.zoom_factor
+        y_canvas = self.image_y + y_img * self.zoom_factor
+        r = 3
+        self.canvas.create_oval(
+            x_canvas - r, y_canvas - r, x_canvas + r, y_canvas + r,
+            fill="green", outline="", tags="temp_annotation"
+        )
+
+    # 🔵 Redraw polygon
+    if len(self.polygon_points) >= 4:
+        scaled_points = [
+            self.image_x + (pt * self.zoom_factor) if i % 2 == 0
+            else self.image_y + (pt * self.zoom_factor)
+            for i, pt in enumerate(self.polygon_points)
+        ]
+        self.polygon_preview_id = self.canvas.create_polygon(
+            scaled_points,
+            outline="blue",
+            fill="",
+            width=2,
+            tags="temp_annotation"
+        )
+
+
+
 
 def update_image_size(self, focus_x=None, focus_y=None, scale_factor=1.0):
     """Resizes the image and adjusts annotations accordingly while maintaining zoom focus."""
@@ -67,48 +99,12 @@ def update_image_size(self, focus_x=None, focus_y=None, scale_factor=1.0):
     for annotation in self.annotations:
         self.redraw_annotation(annotation, new_width, new_height)
 
-    # ✅ Redraw temporary annotations (in-progress keypoints, polygons, etc.)
-    self.redraw_temp_annotations()
-
-        
-def redraw_temp_annotations(self):
-    """Redraw in-progress keypoints or polygons during zoom."""
-    self.canvas.delete("temp_annotation")
-
-    zoomed_width = self.image.width * self.zoom_factor
-    zoomed_height = self.image.height * self.zoom_factor
-
-    if self.current_annotation_type == KeypointAnnotation:
-        for x_norm, y_norm, _ in self.keypoints:
-            x = x_norm * zoomed_width
-            y = y_norm * zoomed_height
-            r = 3
-            self.canvas.create_oval(
-                x - r, y - r, x + r, y + r,
-                fill="green", outline="", tags="temp_annotation"
-            )
-
-    elif self.current_annotation_type == PolygonAnnotation and len(self.polygon_points) >= 4:
-        scaled_points = []
-        for i in range(0, len(self.polygon_points), 2):
-            x = self.polygon_points[i] * zoomed_width
-            y = self.polygon_points[i+1] * zoomed_height
-            scaled_points.extend([x, y])
-
-        self.polygon_preview_id = self.canvas.create_polygon(
-            scaled_points, outline="blue", fill="", width=2, tags="temp_annotation"
-        )
-
-
 
 def redraw_annotation(self, annotation, new_width, new_height):
     """Redraws a single annotation at the correct scaled position."""
 
     ann_type = annotation.annotation_type
     rel_coords = annotation.coordinates
-    new_width = int(self.image.width * self.zoom_factor)
-    new_height = int(self.image.height * self.zoom_factor)
-
 
     if isinstance(annotation, RectangleAnnotation):
         x1, y1, x2, y2 = [rel_coords[i] * new_width if i % 2 == 0 else rel_coords[i] * new_height for i in range(4)]
@@ -137,15 +133,20 @@ def redraw_annotation(self, annotation, new_width, new_height):
     elif isinstance(annotation, KeypointAnnotation):
         dot_ids = []
         for x_norm, y_norm, v in annotation.coordinates:
-            x = x_norm * new_width  # ✅ correct — new_width is zoomed width
+            x = x_norm * new_width
             y = y_norm * new_height
-            r = 1
+
+            print(f"🎯 Drawing keypoint at ({x:.1f}, {y:.1f}) from norm ({x_norm:.3f}, {y_norm:.3f})")
+
+            r = 3
             dot = self.canvas.create_oval(
                 x - r, y - r, x + r, y + r,
                 fill="green", outline="", tags="annotation"
             )
             dot_ids.append(dot)
         annotation.canvas_id = dot_ids
+
+
 
     elif isinstance(annotation, PolygonAnnotation):
         if len(rel_coords) >= 6:

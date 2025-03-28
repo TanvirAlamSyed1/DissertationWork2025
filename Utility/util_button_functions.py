@@ -137,17 +137,20 @@ def load_annotations(self,event=None):
                 annotation = FreehandAnnotation(abs_coords)
             
             elif ann_type == "Keypoint" and isinstance(rel_coords, list):
-                keypoints = []
+                abs_coords = []
                 for kp in rel_coords:
-                    if isinstance(kp, (list, tuple)) and len(kp) >= 2:
-                        x = kp[0]
-                        y = kp[1]
-                        v = kp[2] if len(kp) > 2 else 2
-                        keypoints.append((x, y, v))
-                annotation = KeypointAnnotation(keypoints)
+                    if not isinstance(kp, (list, tuple)) or len(kp) < 2:
+                        continue
+
+                    x_norm = kp[0]
+                    y_norm = kp[1]
+                    v = kp[2] if len(kp) > 2 else 2
+
+                    abs_coords.append((x_norm, y_norm, v))
+
+                annotation = KeypointAnnotation(abs_coords)
 
 
-                
             elif ann_type == "Polygon" and len(rel_coords) % 2 == 0:
                 abs_coords = []
                 for i in range(0, len(rel_coords), 2):
@@ -171,22 +174,21 @@ def load_annotations(self,event=None):
 
 def redraw_annotations(self):
     """Redraws all annotations on the canvas without deleting the image."""
-    self.canvas.delete("annotation")  # Clear only annotations, not the image
+    self.canvas.delete("annotation")
 
     if not self.image:
-        return  # Prevent errors if no image is loaded
+        return
 
-    current_width = self.image.width
-    current_height = self.image.height
+    # ✅ Use zoomed image size
+    current_width = int(self.image.width * self.zoom_factor)
+    current_height = int(self.image.height * self.zoom_factor)
 
-    # Ensure image is properly drawn with a tag
     self.canvas.create_image(0, 0, anchor=tk.NW, image=self.photo, tags="image")
 
-    # Redraw each annotation using its class method
     for annotation in self.annotations:
-        annotation = self.redraw_annotation(annotation, current_width, current_height)
+        self.redraw_annotation(annotation, current_width, current_height)
 
-    self.update_annotation_listbox()  # Update Listbox UI
+    self.update_annotation_listbox()
 
 
 def label_annotation(self, event):

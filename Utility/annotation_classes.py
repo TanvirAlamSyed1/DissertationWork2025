@@ -89,17 +89,10 @@ class KeypointAnnotation(Annotation):
         ]
     
     def to_dict(self, img_width=None, img_height=None):
-        coords = self.coordinates
-        if img_width and img_height:
-            coords = [
-                [x / img_width, y / img_height, v]
-                for x, y, v in self.coordinates
-            ]
-
         return {
             "id": self.id,
             "type": self.annotation_type,
-            "coordinates": coords,
+            "coordinates": self.coordinates,  # already normalized
             "label": self.label
         }
 

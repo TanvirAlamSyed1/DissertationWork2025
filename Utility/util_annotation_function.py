@@ -77,22 +77,25 @@ def on_press(self, event):
         )
 
     elif self.current_annotation_type == KeypointAnnotation:
-        x, y = self.clamp_to_image_bounds(raw_x, raw_y)
+        # Clamp for drawing bounds
+        x_clamped, y_clamped = self.clamp_to_image_bounds(raw_x, raw_y)
 
-        # Capture current zoomed dimensions at the time of placement
-        zoomed_width = self.image.width * self.zoom_factor
-        zoomed_height = self.image.height * self.zoom_factor
+        # 🔥 Convert canvas position to raw image-space coordinates
+        x_img = (x_clamped - self.image_x) / self.zoom_factor
+        y_img = (y_clamped - self.image_y) / self.zoom_factor
 
-        # Defer normalization — store full placement context
-        self.keypoints.append((x, y, 2, zoomed_width, zoomed_height))
+        print(f"📌 Keypoint raw image coords: ({x_img:.2f}, {y_img:.2f})")
 
-        # Draw dot on canvas at current zoom level
-        r = 1
+        self.keypoints.append((x_img, y_img, 2))
+
+        # Draw on the canvas using zoomed position
+        r = 3
         dot = self.canvas.create_oval(
-            x - r, y - r, x + r, y + r,
+            x_clamped - r, y_clamped - r, x_clamped + r, y_clamped + r,
             fill="green", outline="", tags="temp_annotation"
         )
         self.keypoint_canvas_ids.append(dot)
+
 
     elif self.current_annotation_type == PolygonAnnotation:
         x, y = self.clamp_to_image_bounds(raw_x, raw_y)
@@ -229,6 +232,7 @@ def finalise_polygon(self, event=None):
         self.polygon_preview_id = None
     self.polygon_points = []
 
+
 def finalise_keypoints(self, event=None):
     if self.current_annotation_type != KeypointAnnotation:
         return
@@ -238,32 +242,30 @@ def finalise_keypoints(self, event=None):
 
     normalized_keypoints = []
 
-    for kp in self.keypoints:
-        if len(kp) == 5:
-            # New format: (x, y, v, zoomed_w, zoomed_h)
-            x, y, v, w, h = kp
-            x_norm = x / w
-            y_norm = y / h
-            normalized_keypoints.append((x_norm, y_norm, v))
-        else:
-            # Fallback for old data structure (already normalized)
-            x, y, v = kp
-            normalized_keypoints.append((x, y, v))
+    for x, y, v in self.keypoints:
+        x_norm = x / self.image.width
+        y_norm = y / self.image.height
+        normalized_keypoints.append((x_norm, y_norm, v))
 
     annotation = KeypointAnnotation(normalized_keypoints)
+    print("✅ Saving normalized keypoints:", normalized_keypoints)
 
     if self.is_within_image_bounds(annotation):
         annotation.canvas_id = self.keypoint_canvas_ids.copy()
         self.annotations.append(annotation)
+        self.redraw_annotations()
         self.update_annotation_listbox()
     else:
         print("❌ Keypoints out of bounds. Not added.")
 
     for dot_id in self.keypoint_canvas_ids:
         self.canvas.itemconfig(dot_id, tags="annotation")
-
+    
+    self.canvas.delete("temp_annotation")
     self.keypoints = []
     self.keypoint_canvas_ids = []
+
+
 
 
 def clear_annotation(self):

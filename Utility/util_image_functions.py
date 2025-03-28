@@ -16,7 +16,7 @@ def load_image(self):
         )
 
         if not confirm:
-            self.notification_number -= 1  # Roll back count if cancelled
+            self.notification_number -= 1
             return
 
         if self.notification_number >= 3:
@@ -27,24 +27,39 @@ def load_image(self):
             )
             if disable_prompt:
                 self.user_notification_preference = False
-            self.notification_number = 0  # Reset either way
+            self.notification_number = 0
 
     if 0 <= self.current_image_index < len(self.image_files):
         image_path = os.path.join(self.input_folder, self.image_files[self.current_image_index])
         self.image = Image.open(image_path)
+
         new_width, new_height = self.image.width, self.image.height
         self.photo = ImageTk.PhotoImage(self.image)
 
-        self.canvas.delete("image")
+        # ✅ Completely clear canvas
+        self.canvas.delete("all")
         self.canvas.config(width=new_width, height=new_height)
-
-        self.image_x = 0
-        self.image_y = 0
-        self.canvas.create_image(self.image_x, self.image_y, anchor=tk.NW, image=self.photo, tags="image")
         self.canvas.config(scrollregion=(0, 0, new_width, new_height))
 
-        self.annotations = []
-        self.clear_annotation()
+        # ✅ Reset zoom and image placement
+        self.zoom_factor = 1.0
+        self.image_x = 0
+        self.image_y = 0
+
+        # ✅ Reset state
+        self.annotations.clear()
+        self.keypoints.clear()
+        self.keypoint_canvas_ids.clear()
+        self.undone_annotations.clear()
+        self.polygon_points = []
+        self.polygon_preview_id = None
+
+        # ✅ Draw new image
+        self.canvas.create_image(self.image_x, self.image_y, anchor=tk.NW, image=self.photo, tags="image")
+
+        # ✅ Clear listbox & UI
+        self.update_annotation_listbox()
+
 
 
 def next_image(self,event=None):

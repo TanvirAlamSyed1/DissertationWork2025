@@ -159,7 +159,7 @@ class MainPage(tk.Frame):
     def load_folder(self,event=None): util_button_functions.load_folder(self,event)
     def load_image(self): util_image_functions.load_image(self)
     def prev_image(self,event=None): util_image_functions.prev_image(self,event)
-    def load_annotation(self,event): util_button_functions.load_annotations(self,event)
+    def load_annotation(self,event=None): util_button_functions.load_annotations(self,event)
     def next_image(self,event=None): util_image_functions.next_image(self,event)
     def on_mouse_wheel(self, event): util_zoom_functions.on_mouse_wheel(self, event)
     def update_image_size(self, fx, fy, scale): util_zoom_functions.update_image_size(self, fx, fy, scale)
@@ -179,3 +179,4 @@ class MainPage(tk.Frame):
     def show_listbox_menu(self, event): util_button_functions.show_listbox_menu(self, event)
     def go_to_image_by_name(self): util_image_functions.go_to_image_by_name(self)
     def save_image(self):util_image_functions.save_image(self)
+    def redraw_temp_annotations(self):util_zoom_functions.redraw_temp_annotations(self)
