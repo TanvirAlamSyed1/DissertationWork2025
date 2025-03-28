@@ -103,7 +103,7 @@ def save_image(self):
         messagebox.showwarning("No Image", "Please load an image first.", parent=self.controller)
         return
 
-    annotated_folder = os.path.join(self.input_folder, "annotated_images")
+    annotated_folder = self.annotated_image_folder
     os.makedirs(annotated_folder, exist_ok=True)
 
     image_filename = self.image_files[self.current_image_index]

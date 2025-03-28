@@ -15,23 +15,30 @@ def show_listbox_menu(self, event):
         self.listbox_menu.post(event.x_root, event.y_root)
 
 
-def load_folder(self,event=None):
+def load_folder(self, event=None):
     """Allows user to select an input folder and loads all image files."""
     self.input_folder = filedialog.askdirectory(title="Select Input Folder")
     if self.input_folder:
-        self.output_folder = os.path.join(self.input_folder, "annotated_images")
-        os.makedirs(self.output_folder, exist_ok=True)
+        # ✅ Separate folders for annotations and images
+        self.annotation_folder = os.path.join(self.input_folder, "annotations")
+        self.annotated_image_folder = os.path.join(self.input_folder, "annotated_images")
+        os.makedirs(self.annotation_folder, exist_ok=True)
+        os.makedirs(self.annotated_image_folder, exist_ok=True)
 
         # Load image files from folder
-        self.image_files = [f for f in os.listdir(self.input_folder) if f.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', '.bmp'))]
+        self.image_files = [
+            f for f in os.listdir(self.input_folder)
+            if f.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', '.bmp'))
+        ]
 
         if self.image_files:
             self.current_image_index = 0
-            self.load_image()  # Ensure this function loads the selected image
+            self.load_image()
         else:
             messagebox.showwarning("Warning", "No image files found in the selected folder.")
 
-def save_annotations(self,event=None):
+
+def save_annotations(self, event=None):
     """Saves all annotations for the current image as a JSON file."""
     if not self.image_files or self.current_image_index == -1:
         messagebox.showwarning("No Image", "No image is currently loaded.")
@@ -39,7 +46,9 @@ def save_annotations(self,event=None):
 
     current_image = self.image_files[self.current_image_index]
     image_name = os.path.basename(current_image)
-    annotations_file = os.path.join(self.output_folder, f"{os.path.splitext(image_name)[0]}_annotations.json")
+
+    # ✅ Save to annotation folder, not output_folder
+    annotations_file = os.path.join(self.annotation_folder, f"{os.path.splitext(image_name)[0]}_annotations.json")
 
     if not self.image:
         messagebox.showerror("Error", "No image loaded.")
@@ -47,20 +56,13 @@ def save_annotations(self,event=None):
 
     img_width, img_height = self.image.width, self.image.height
 
-    # Prepare annotation data 
     annotations_data = {
         "image_name": image_name,
         "image_width": img_width,
         "image_height": img_height,
-        "annotations": []
+        "annotations": [a.to_dict(img_width, img_height) for a in self.annotations]
     }
 
-    for annotation in self.annotations:
-        annotations_data["annotations"].append(
-            annotation.to_dict(img_width, img_height)
-        )
-
-    # Save to JSON file
     try:
         with open(annotations_file, "w") as f:
             json.dump(annotations_data, f, indent=4)
@@ -77,7 +79,7 @@ def load_annotations(self,event=None):
 
     current_image = self.image_files[self.current_image_index]
     image_name = os.path.basename(current_image)
-    annotations_file = os.path.join(self.output_folder, f"{os.path.splitext(image_name)[0]}_annotations.json")
+    annotations_file = os.path.join(self.annotation_folder, f"{os.path.splitext(image_name)[0]}_annotations.json")
 
     if not os.path.exists(annotations_file):
         messagebox.showwarning("Not Found", f"No annotations found for {image_name}")

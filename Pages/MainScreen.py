@@ -39,6 +39,8 @@ class MainPage(tk.Frame):
         self.current_image_index = -1
         self.input_folder = ""
         self.output_folder = ""
+        self.annotated_image_folder=""
+        self.annotation_folder=""
         self.current_annotation = None
 
         self.annotation_classes = {
