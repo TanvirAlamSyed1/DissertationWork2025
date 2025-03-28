@@ -31,32 +31,29 @@ def on_mouse_wheel(self, event):
 
     
 def redraw_temp_annotations(self):
-    """Redraw any in-progress temp annotations (keypoints, polygon, etc.) after zoom."""
+    """Redraws in-progress keypoints and polygon using zoomed coords."""
     self.canvas.delete("temp_annotation")
 
-    # 🟢 Redraw keypoints
+    # 🟢 Keypoints
     for x_img, y_img, v in self.keypoints:
-        x_canvas = self.image_x + x_img * self.zoom_factor
-        y_canvas = self.image_y + y_img * self.zoom_factor
+        x_canvas = self.image_x + (x_img * self.zoom_factor)
+        y_canvas = self.image_y + (y_img * self.zoom_factor)
         r = 3
         self.canvas.create_oval(
             x_canvas - r, y_canvas - r, x_canvas + r, y_canvas + r,
             fill="green", outline="", tags="temp_annotation"
         )
 
-    # 🔵 Redraw polygon
+    # 🔵 Polygon
     if len(self.polygon_points) >= 4:
         scaled_points = [
-            self.image_x + (pt * self.zoom_factor) if i % 2 == 0
-            else self.image_y + (pt * self.zoom_factor)
+            self.image_x + pt * self.zoom_factor if i % 2 == 0
+            else self.image_y + pt * self.zoom_factor
             for i, pt in enumerate(self.polygon_points)
         ]
         self.polygon_preview_id = self.canvas.create_polygon(
             scaled_points,
-            outline="blue",
-            fill="",
-            width=2,
-            tags="temp_annotation"
+            outline="blue", fill="", width=2, tags="temp_annotation"
         )
 
 
@@ -98,6 +95,11 @@ def update_image_size(self, focus_x=None, focus_y=None, scale_factor=1.0):
     self.canvas.delete("annotation")
     for annotation in self.annotations:
         self.redraw_annotation(annotation, new_width, new_height)
+    # Redraw temp annotations (e.g., in-progress polygon)
+    if hasattr(self, "current_annotation_type"):
+        if self.current_annotation_type in [KeypointAnnotation, PolygonAnnotation]:
+            self.redraw_temp_annotations()
+
 
 
 def redraw_annotation(self, annotation, new_width, new_height):

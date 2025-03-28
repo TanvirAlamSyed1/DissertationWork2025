@@ -98,20 +98,33 @@ def on_press(self, event):
 
 
     elif self.current_annotation_type == PolygonAnnotation:
-        x, y = self.clamp_to_image_bounds(raw_x, raw_y)
-        self.polygon_points.extend([x, y])
+        x_clamped, y_clamped = self.clamp_to_image_bounds(raw_x, raw_y)
 
-        if len(self.polygon_points) >= 4:  # At least 2 points to draw
+        # Convert to raw image coordinates (independent of zoom)
+        x_img = (x_clamped - self.image_x) / self.zoom_factor
+        y_img = (y_clamped - self.image_y) / self.zoom_factor
+
+        self.polygon_points.extend([x_img, y_img])  # ✅ store image-space coords
+
+        if len(self.polygon_points) >= 4:
             if self.polygon_preview_id:
                 self.canvas.delete(self.polygon_preview_id)
 
+            # Scale points to canvas coords for preview drawing
+            scaled_points = [
+                self.image_x + pt * self.zoom_factor if i % 2 == 0
+                else self.image_y + pt * self.zoom_factor
+                for i, pt in enumerate(self.polygon_points)
+            ]
+
             self.polygon_preview_id = self.canvas.create_polygon(
-                self.polygon_points,
+                scaled_points,
                 outline="blue",
                 fill="",
                 width=2,
                 tags="temp_annotation"
             )
+
 
 
 def on_drag(self, event):
@@ -205,10 +218,16 @@ def finalise_polygon(self, event=None):
         return
 
     annotation = PolygonAnnotation(self.polygon_points)
-
     if self.is_within_image_bounds(annotation):
+        # ✅ Convert image-space polygon points to canvas coords
+        scaled_points = [
+            self.image_x + pt * self.zoom_factor if i % 2 == 0
+            else self.image_y + pt * self.zoom_factor
+            for i, pt in enumerate(self.polygon_points)
+        ]
+
         canvas_id = self.canvas.create_polygon(
-            self.polygon_points,
+            scaled_points,
             outline="blue",
             fill="",
             width=2,
@@ -216,14 +235,13 @@ def finalise_polygon(self, event=None):
         )
         annotation.canvas_id = canvas_id
 
-        # ✅ Normalize using zoomed dimensions
-        zoomed_width = self.image.width * self.zoom_factor
-        zoomed_height = self.image.height * self.zoom_factor
-        annotation.coordinates = annotation.normalize_coordinates(zoomed_width, zoomed_height)
+        # ✅ Normalize using raw image dimensions (not zoomed!)
+        annotation.coordinates = annotation.normalize_coordinates(self.image.width, self.image.height)
 
         self.annotations.append(annotation)
         self.update_annotation_listbox()
         print("✅ Polygon finalized and added.")
+
     else:
         print("❌ Polygon out of bounds.")
 
