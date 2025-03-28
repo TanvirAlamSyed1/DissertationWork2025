@@ -346,15 +346,17 @@ def update_annotation_listbox(self):
     print("📋 Updating listbox...")  # Debug
 
     for index, annotation in enumerate(self.annotations):
-        print(f" - Annotation {index}: {annotation.annotation_type}")  # Debug
-
         if annotation.annotation_type == "Keypoint":
-            label = f"{index + 1}. Keypoints ({len(annotation.coordinates)} points)"
+            label = f"{index + 1}. Keypoints ({len(annotation.coordinates)} points): {annotation.label}"
         else:
             label = f"{index + 1}. {annotation.annotation_type}: {annotation.label}"
 
-        print("Inserting into listbox:", label)  # Debug
+        # Add crowd flag if applicable
+        if getattr(annotation, "iscrowd", 0):
+            label += " [CROWD]"
+
         self.annotation_listbox.insert(tk.END, label)
+
 
     self.annotation_listbox.update_idletasks()  # Forces UI update
     self.annotation_listbox.bind("<<ListboxSelect>>", self.on_annotation_selected)
@@ -399,4 +401,13 @@ def change_annotation_type(self, event):
     if selected in self.annotation_classes:
         self.current_annotation_type = self.annotation_classes[selected]
 
+def toggle_crowd_label(self):
+    index = self.selected_annotation_index
+    if index is None or index >= len(self.annotations):
+        return
 
+    annotation = self.annotations[index]
+    annotation.iscrowd = 1 if getattr(annotation, "iscrowd", 0) == 0 else 0  # toggle it
+    print(f"🔁 Toggled iscrowd for annotation {index} → {annotation.iscrowd}")
+
+    self.update_annotation_listbox()

@@ -101,6 +101,7 @@ class MainPage(tk.Frame):
         self.listbox_menu = tk.Menu(self, tearoff=0)
         self.listbox_menu.add_command(label="Label Annotation", command=self.label_annotation)
         self.listbox_menu.add_command(label="Delete Annotation", command=self.delete_specific_annotation)
+        self.listbox_menu.add_command(label="Toggle Crowd", command=self.toggle_crowd_label)
         self.annotation_listbox.bind("<Button-3>", self.show_listbox_menu)
 
     def setup_bottom_toolbar(self):
@@ -182,3 +183,4 @@ class MainPage(tk.Frame):
     def go_to_image_by_name(self): util_image_functions.go_to_image_by_name(self)
     def save_image(self):util_image_functions.save_image(self)
     def redraw_temp_annotations(self):util_zoom_functions.redraw_temp_annotations(self)
+    def toggle_crowd_label(self):util_annotation_function.toggle_crowd_label(self)

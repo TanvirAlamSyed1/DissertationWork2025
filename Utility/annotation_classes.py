@@ -7,12 +7,7 @@ class Annotation:
         self.coordinates = coordinates
         self.label = "No Label"
         self.canvas_id = None
-
-    def normalize_coordinates(self, img_width, img_height):
-        return [
-            coord / img_width if i % 2 == 0 else coord / img_height
-            for i, coord in enumerate(self.coordinates)
-        ]
+        self.iscrowd = 0  # 👈 NEW
 
     def to_dict(self, img_width=None, img_height=None):
         coords = self.coordinates
@@ -23,9 +18,15 @@ class Annotation:
             "id": self.id,
             "type": self.annotation_type,
             "coordinates": coords,
-            "label": self.label
+            "label": self.label,
+            "iscrowd": self.iscrowd  # 👈 NEW
         }
 
+    def normalize_coordinates(self, img_width, img_height):
+        return [
+            coord / img_width if i % 2 == 0 else coord / img_height
+            for i, coord in enumerate(self.coordinates)
+        ]
 
     def get_absolute_bounds(self):
         """Should be implemented by subclasses."""

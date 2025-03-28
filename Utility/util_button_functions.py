@@ -60,7 +60,7 @@ def save_annotations(self, event=None):
         "image_name": image_name,
         "image_width": img_width,
         "image_height": img_height,
-        "annotations": [a.to_dict(img_width, img_height) for a in self.annotations]
+        "annotations": [a.to_dict(img_width, img_height) for a in self.annotations],
     }
 
     try:
@@ -167,6 +167,7 @@ def load_annotations(self,event=None):
 
             annotation.label = label
             annotation.id = ann.get("id", "")
+            annotation.iscrowd = ann.get("iscrowd", 0) 
             self.annotations.append(annotation)
     
     self.redraw_annotations()
