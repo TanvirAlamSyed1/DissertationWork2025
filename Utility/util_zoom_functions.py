@@ -120,6 +120,15 @@ def redraw_annotation(self, annotation, new_width, new_height):
         y2 = rel_coords[3] * new_height
         canvas_id = self.canvas.create_oval(x1, y1, x2, y2, outline="red", tags="annotation")
         annotation.canvas_id = canvas_id
+    
+    elif isinstance(annotation, CircleAnnotation):
+        x1 = rel_coords[0] * new_width
+        y1 = rel_coords[1] * new_height
+        x2 = rel_coords[2] * new_width
+        y2 = rel_coords[3] * new_height
+        canvas_id = self.canvas.create_oval(x1, y1, x2, y2, outline="red", tags="annotation")
+        annotation.canvas_id = canvas_id
+
 
     elif isinstance(annotation, FreehandAnnotation):
         if len(rel_coords) < 4:

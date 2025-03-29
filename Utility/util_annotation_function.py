@@ -30,13 +30,16 @@ def is_within_image_bounds(self, annotation):
     right = left + zoomed_width
     bottom = top + zoomed_height
 
-
     # Rectangle or Circle — use bounding box
     if isinstance(annotation, RectangleAnnotation):
         x1, y1, x2, y2 = annotation.get_absolute_bounds()
         return left <= x1 <= right and left <= x2 <= right and top <= y1 <= bottom and top <= y2 <= bottom
 
     elif isinstance(annotation, EllipseAnnotation):
+        x1, y1, x2, y2 = annotation.get_absolute_bounds()
+        return left <= x1 <= right and left <= x2 <= right and top <= y1 <= bottom and top <= y2 <= bottom
+    
+    elif isinstance(annotation, CircleAnnotation):
         x1, y1, x2, y2 = annotation.get_absolute_bounds()
         return left <= x1 <= right and left <= x2 <= right and top <= y1 <= bottom and top <= y2 <= bottom
 
@@ -160,6 +163,23 @@ def on_drag(self, event):
             *self.canvas.coords(self.current_annotation),
             cur_x, cur_y
             )
+    elif self.current_annotation_type == CircleAnnotation:
+        self.canvas.delete("temp_annotation")
+
+        cx, cy = self.start_x, self.start_y
+        radius = min(abs(cur_x - cx), abs(cur_y - cy))
+
+        x1 = cx - radius
+        y1 = cy - radius
+        x2 = cx + radius
+        y2 = cy + radius
+
+        self.current_annotation = self.canvas.create_oval(
+            x1, y1, x2, y2,
+            outline="red", tags="temp_annotation"
+        )
+
+
 
 
 def on_release(self, event):
@@ -196,6 +216,19 @@ def on_release(self, event):
             return
         annotation = FreehandAnnotation(points)
         canvas_id = self.current_annotation
+    
+    elif self.current_annotation_type == CircleAnnotation:
+        cx, cy = self.start_x, self.start_y
+        radius = min(abs(end_x - cx), abs(end_y - cy))
+
+        x1 = cx - radius
+        y1 = cy - radius
+        x2 = cx + radius
+        y2 = cy + radius
+
+        annotation = CircleAnnotation(x1, y1, x2, y2)
+        canvas_id = self.canvas.create_oval(x1, y1, x2, y2, outline="red", tags="annotation")
+
 
     # ❌ Skip invalid annotations
     if annotation and not self.is_within_image_bounds(annotation):

@@ -46,10 +46,12 @@ class MainPage(tk.Frame):
         self.annotation_classes = {
             "Rectangle": RectangleAnnotation,
             "Ellipse": EllipseAnnotation,
-            "Freehand": FreehandAnnotation,
+            "Circle": CircleAnnotation,
             "Polygon": PolygonAnnotation,
-            "Keypoints": KeypointAnnotation
+            "Freehand": FreehandAnnotation,
+            "Keypoint": KeypointAnnotation,
         }
+
         self.current_annotation_type = RectangleAnnotation
         self.notification_number = 0
         self.user_notification_preference = True

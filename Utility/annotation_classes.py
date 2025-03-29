@@ -50,6 +50,31 @@ class EllipseAnnotation(Annotation):
         x1, y1, x2, y2 = self.coordinates
         return min(x1, x2), min(y1, y2), max(x1, x2), max(y1, y2)
 
+class CircleAnnotation(Annotation):
+    def __init__(self, x1, y1, x2, y2):
+        # Force the bounding box to be a square
+        width = abs(x2 - x1)
+        height = abs(y2 - y1)
+        size = min(width, height)
+
+        # Preserve the direction of drawing (top-left to bottom-right, etc.)
+        if x2 < x1:
+            x2 = x1 - size
+        else:
+            x2 = x1 + size
+
+        if y2 < y1:
+            y2 = y1 - size
+        else:
+            y2 = y1 + size
+
+        super().__init__("Circle", [x1, y1, x2, y2])
+
+    def get_absolute_bounds(self):
+        x1, y1, x2, y2 = self.coordinates
+        return min(x1, x2), min(y1, y2), max(x1, x2), max(y1, y2)
+
+
 
 
 class FreehandAnnotation(Annotation):

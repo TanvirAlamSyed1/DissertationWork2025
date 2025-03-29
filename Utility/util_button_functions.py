@@ -138,6 +138,16 @@ def load_annotations(self,event=None):
 
                 annotation = FreehandAnnotation(abs_coords)
             
+            elif ann_type == "Circle" and len(rel_coords) == 4:
+                abs_coords = [
+                    rel_coords[0] * self.image.width,
+                    rel_coords[1] * self.image.height,
+                    rel_coords[2] * self.image.width,
+                    rel_coords[3] * self.image.height
+                ]
+                annotation = CircleAnnotation(*abs_coords)
+
+            
             elif ann_type == "Keypoint" and isinstance(rel_coords, list):
                 abs_coords = []
                 for kp in rel_coords:
