@@ -1,8 +1,14 @@
 import tkinter as tk
-from tkinter import filedialog, messagebox
+from tkinter import filedialog, messagebox,simpledialog
 from Utility.annotation_classes import *
 import json
 import os
+from Utility.util_export_functions import (
+    load_all_annotations,
+    export_to_coco,
+    export_to_yolo,
+    export_to_pascal_voc
+)
 
  
 def show_listbox_menu(self, event):
@@ -18,24 +24,29 @@ def show_listbox_menu(self, event):
 def load_folder(self, event=None):
     """Allows user to select an input folder and loads all image files."""
     self.input_folder = filedialog.askdirectory(title="Select Input Folder")
-    if self.input_folder:
-        # ✅ Separate folders for annotations and images
-        self.annotation_folder = os.path.join(self.input_folder, "annotations")
-        self.annotated_image_folder = os.path.join(self.input_folder, "annotated_images")
-        os.makedirs(self.annotation_folder, exist_ok=True)
-        os.makedirs(self.annotated_image_folder, exist_ok=True)
+    
+    if not self.input_folder:
+        return  # User cancelled selection
 
-        # Load image files from folder
-        self.image_files = [
-            f for f in os.listdir(self.input_folder)
-            if f.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', '.bmp'))
-        ]
+    # Check for image files first
+    self.image_files = [
+        f for f in os.listdir(self.input_folder)
+        if f.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', '.bmp'))
+    ]
 
-        if self.image_files:
-            self.current_image_index = 0
-            self.load_image()
-        else:
-            messagebox.showwarning("Warning", "No image files found in the selected folder.")
+    if not self.image_files:
+        messagebox.showwarning("Warning", "No image files found in the selected folder.")
+        return
+
+    # ✅ Only create folders if images are found
+    self.annotation_folder = os.path.join(self.input_folder, "annotations")
+    self.annotated_image_folder = os.path.join(self.input_folder, "annotated_images")
+    os.makedirs(self.annotation_folder, exist_ok=True)
+    os.makedirs(self.annotated_image_folder, exist_ok=True)
+
+    self.current_image_index = 0
+    self.load_image()
+
 
 
 def save_annotations(self, event=None):
@@ -219,4 +230,56 @@ def label_annotation(self, event):
     if label:  
         annotation.label = label  # Update label
         self.update_annotation_listbox()  # Refresh listbox
+
+from tkinter import filedialog, messagebox, simpledialog
+from Utility.util_export_functions import (
+    load_all_annotations,
+    export_to_coco,
+    export_to_yolo,
+    export_to_pascal_voc
+)
+import os
+
+def download_annotations(self):
+    if not self.annotation_folder:
+        messagebox.showerror("Error", "No annotation folder loaded.")
+        return
+
+    export_format = simpledialog.askstring(
+        "Export Format",
+        "Enter format: COCO / YOLO / PascalVOC"
+    )
+    if not export_format:
+        return
+
+    format_lower = export_format.lower()
+    data = load_all_annotations(self.annotation_folder)
+
+    # Ask user to select a base folder
+    base_folder = filedialog.askdirectory(title="Select Output Folder")
+    if not base_folder:
+        return
+
+    if format_lower == "coco":
+        export_folder = os.path.join(base_folder, "COCO")
+        os.makedirs(export_folder, exist_ok=True)
+        export_path = os.path.join(export_folder, "annotations_coco.json")
+        export_to_coco(data, export_path)
+        messagebox.showinfo("Exported", f"COCO annotations saved to:\n{export_path}")
+
+    elif format_lower == "yolo":
+        export_folder = os.path.join(base_folder, "YOLO")
+        os.makedirs(export_folder, exist_ok=True)
+        export_to_yolo(data, export_folder)
+        messagebox.showinfo("Exported", f"YOLO labels saved in:\n{export_folder}")
+
+    elif format_lower in ["pascal", "pascalvoc", "voc"]:
+        export_folder = os.path.join(base_folder, "PascalVOC")
+        os.makedirs(export_folder, exist_ok=True)
+        export_to_pascal_voc(data, export_folder)
+        messagebox.showinfo("Exported", f"Pascal VOC XMLs saved in:\n{export_folder}")
+
+    else:
+        messagebox.showerror("Unsupported Format", f"Format '{export_format}' is not supported.")
+
 

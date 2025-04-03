@@ -69,6 +69,8 @@ def next_image(self,event=None):
         self.zoom_factor = 1.0  
         self.keypoints = []
         self.keypoint_canvas_ids = []
+        self.polygon_points = []
+        self.polygon_preview_id = None
         self.load_image()
 
 def prev_image(self,event=None):
@@ -78,6 +80,8 @@ def prev_image(self,event=None):
         self.zoom_factor = 1.0  
         self.keypoints = []
         self.keypoint_canvas_ids = []
+        self.polygon_points = []
+        self.polygon_preview_id = None
         self.load_image()
 
 def go_to_image_by_name(self):
