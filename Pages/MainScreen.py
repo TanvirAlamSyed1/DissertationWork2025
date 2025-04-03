@@ -27,6 +27,10 @@ class MainPage(tk.Frame):
         self.image_x = 0
         self.image_y = 0
         self.zoom_factor = 1.0
+        
+        self.edit_mode = False
+        self.selected_annotation = None
+        self.drag_start = None
 
         self.annotations = []
         self.undone_annotations = []
@@ -69,6 +73,10 @@ class MainPage(tk.Frame):
         tk.Label(left_toolbar, text="Search Image:").pack(pady=(10, 0), padx=5, anchor="w")
         search_frame = tk.Frame(left_toolbar)
         search_frame.pack(padx=5, fill=tk.X)
+        
+        self.edit_toggle = tk.BooleanVar(value=False)
+        tk.Checkbutton(left_toolbar, text="Edit Mode", variable=self.edit_toggle, command=self.toggle_edit_mode).pack(pady=5, padx=5, anchor="w")
+
         self.search_entry = tk.Entry(search_frame)
         self.search_entry.pack(side=tk.LEFT, fill=tk.X, expand=True)
         tk.Button(search_frame, text="Go", width=4, command=self.go_to_image_by_name).pack(side=tk.RIGHT, padx=(5, 0))
@@ -104,6 +112,7 @@ class MainPage(tk.Frame):
         self.listbox_menu.add_command(label="Label Annotation", command=self.label_annotation)
         self.listbox_menu.add_command(label="Delete Annotation", command=self.delete_specific_annotation)
         self.listbox_menu.add_command(label="Toggle Crowd", command=self.toggle_crowd_label)
+        self.listbox_menu.add_command(label="Lock/Unlock", command=self.toggle_lock_annotation)
         self.annotation_listbox.bind("<Button-3>", self.show_listbox_menu)
 
     def setup_bottom_toolbar(self):
@@ -128,9 +137,10 @@ class MainPage(tk.Frame):
         self.canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
     def bind_events(self):
-        self.canvas.bind("<ButtonPress-1>", self.on_press)
-        self.canvas.bind("<B1-Motion>", self.on_drag)
-        self.canvas.bind("<ButtonRelease-1>", self.on_release)
+        self.canvas.bind("<ButtonPress-1>", lambda e: self.on_edit_press(e) if self.edit_mode else self.on_press(e))
+        self.canvas.bind("<B1-Motion>", lambda e: self.on_edit_drag(e) if self.edit_mode else self.on_drag(e))
+        self.canvas.bind("<ButtonRelease-1>", lambda e: self.on_edit_release(e) if self.edit_mode else self.on_release(e))
+
         self.canvas.bind("<MouseWheel>", self.on_mouse_wheel)
         self.canvas.bind("<Button-4>", self.on_mouse_wheel)
         self.canvas.bind("<Button-5>", self.on_mouse_wheel)
@@ -186,3 +196,10 @@ class MainPage(tk.Frame):
     def save_image(self):util_image_functions.save_image(self)
     def redraw_temp_annotations(self):util_zoom_functions.redraw_temp_annotations(self)
     def toggle_crowd_label(self):util_annotation_function.toggle_crowd_label(self)
+    def toggle_edit_mode(self):self.edit_mode = self.edit_toggle.get()
+    def on_edit_press(self,event=None):util_annotation_function.on_edit_press(self,event)
+    def on_edit_drag(self,event=None):util_annotation_function.on_edit_drag(self,event)
+    def on_edit_release(self,event=None):util_annotation_function.on_edit_release(self,event)
+    def toggle_lock_annotation(self):util_button_functions.toggle_lock_annotation(self)
+
+    

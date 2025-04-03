@@ -10,7 +10,6 @@ from Utility.util_export_functions import (
     export_to_pascal_voc
 )
 
- 
 def show_listbox_menu(self, event):
     widget = event.widget
     index = widget.nearest(event.y)
@@ -213,6 +212,9 @@ def redraw_annotations(self):
         self.redraw_annotation(annotation, current_width, current_height)
 
     self.update_annotation_listbox()
+    self.canvas.create_image(0, 0, anchor=tk.NW, image=self.photo, tags="image")
+    self.canvas.tag_lower("image")  # 🧠 Always keep image in the background
+
 
 
 def label_annotation(self, event):
@@ -231,14 +233,6 @@ def label_annotation(self, event):
         annotation.label = label  # Update label
         self.update_annotation_listbox()  # Refresh listbox
 
-from tkinter import filedialog, messagebox, simpledialog
-from Utility.util_export_functions import (
-    load_all_annotations,
-    export_to_coco,
-    export_to_yolo,
-    export_to_pascal_voc
-)
-import os
 
 def download_annotations(self):
     if not self.annotation_folder:
@@ -282,4 +276,11 @@ def download_annotations(self):
     else:
         messagebox.showerror("Unsupported Format", f"Format '{export_format}' is not supported.")
 
-
+def toggle_lock_annotation(self):
+    index = self.selected_annotation_index
+    if index is not None and index < len(self.annotations):
+        annotation = self.annotations[index]
+        annotation.locked = not getattr(annotation, "locked", False)
+        status = "🔒 Locked" if annotation.locked else "🔓 Unlocked"
+        print(f"{status} annotation {index}")
+        self.update_annotation_listbox()

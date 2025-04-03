@@ -129,6 +129,7 @@ class PolygonAnnotation(Annotation):
 class KeypointAnnotation(Annotation):
     def __init__(self, keypoints):  # list of (x, y, visibility)
         super().__init__("Keypoint", keypoints)
+        self.canvas_id = []
 
     def normalize_coordinates(self, img_width, img_height):
         return [
@@ -150,15 +151,23 @@ class KeypointAnnotation(Annotation):
         return min(xs), min(ys), max(xs), max(ys)
     
     def draw_annotation(self, canvas, new_width, new_height):
-        for x, y, v in self.coordinates:
-            scaled_x = x * new_width
-            scaled_y = y * new_height
-            radius = 3
-            canvas.create_oval(
-                scaled_x - radius, scaled_y - radius,
-                scaled_x + radius, scaled_y + radius,
-                fill="orange", outline="black", tags="annotation"
+        # Delete any previous keypoints if re-drawing
+        if self.canvas_id:
+            for dot_id in self.canvas_id:
+                canvas.delete(dot_id)
+
+        dot_ids = []
+        for x_norm, y_norm, v in self.coordinates:
+            x = x_norm * new_width
+            y = y_norm * new_height
+            r = 3
+            dot = canvas.create_oval(
+                x - r, y - r, x + r, y + r,
+                fill="green", outline="", tags="annotation"
             )
+            dot_ids.append(dot)
+
+        self.canvas_id = dot_ids
 
 
 class SemanticSegmentationAnnotation(Annotation):
