@@ -7,7 +7,7 @@ class Annotation:
         self.coordinates = coordinates
         self.label = "No Label"
         self.canvas_id = None
-        self.iscrowd = 0  # 👈 NEW
+        self.iscrowd = 0  
 
     def to_dict(self, img_width=None, img_height=None):
         coords = self.coordinates
@@ -19,7 +19,7 @@ class Annotation:
             "type": self.annotation_type,
             "coordinates": coords,
             "label": self.label,
-            "iscrowd": self.iscrowd  # 👈 NEW
+            "iscrowd": self.iscrowd  
         }
 
     def normalize_coordinates(self, img_width, img_height):
@@ -31,6 +31,9 @@ class Annotation:
     def get_absolute_bounds(self):
         """Should be implemented by subclasses."""
         raise NotImplementedError
+    def draw_annotation(self, canvas, new_width, new_height):
+        """Should be implemented by subclasses."""
+        raise NotImplementedError
 
 
 class RectangleAnnotation(Annotation):
@@ -40,6 +43,9 @@ class RectangleAnnotation(Annotation):
     def get_absolute_bounds(self):
         x1, y1, x2, y2 = self.coordinates
         return min(x1, x2), min(y1, y2), max(x1, x2), max(y1, y2)
+    def draw_annotation(self, canvas, new_width, new_height):
+        x1, y1, x2, y2 = [self.coordinates[i] * new_width if i % 2 == 0 else self.coordinates[i] * new_height for i in range(4)]
+        self.canvas_id = canvas.create_rectangle(x1, y1, x2, y2, outline="red", tags="annotation")
 
 
 class EllipseAnnotation(Annotation):
@@ -49,6 +55,10 @@ class EllipseAnnotation(Annotation):
     def get_absolute_bounds(self):
         x1, y1, x2, y2 = self.coordinates
         return min(x1, x2), min(y1, y2), max(x1, x2), max(y1, y2)
+    
+    def draw_annotation(self, canvas, new_width, new_height):
+        x1, y1, x2, y2 = [self.coordinates[i] * new_width if i % 2 == 0 else self.coordinates[i] * new_height for i in range(4)]
+        self.canvas_id = canvas.create_oval(x1, y1, x2, y2, outline="blue", tags="annotation")
 
 class CircleAnnotation(Annotation):
     def __init__(self, x1, y1, x2, y2):
@@ -73,7 +83,10 @@ class CircleAnnotation(Annotation):
     def get_absolute_bounds(self):
         x1, y1, x2, y2 = self.coordinates
         return min(x1, x2), min(y1, y2), max(x1, x2), max(y1, y2)
-
+    
+    def draw_annotation(self, canvas, new_width, new_height):
+        x1, y1, x2, y2 = [self.coordinates[i] * new_width if i % 2 == 0 else self.coordinates[i] * new_height for i in range(4)]
+        self.canvas_id = canvas.create_oval(x1, y1, x2, y2, outline="green", tags="annotation")
 
 
 
@@ -85,6 +98,11 @@ class FreehandAnnotation(Annotation):
         xs = self.coordinates[::2]
         ys = self.coordinates[1::2]
         return min(xs), min(ys), max(xs), max(ys)
+    
+    def draw_annotation(self, canvas, new_width, new_height):
+        scaled_points = [coord * new_width if i % 2 == 0 else coord * new_height for i, coord in enumerate(self.coordinates)]
+        self.canvas_id = canvas.create_line(*scaled_points, fill="orange", tags="annotation", smooth=True)
+    
 
 
 class PolygonAnnotation(Annotation):
@@ -101,6 +119,10 @@ class PolygonAnnotation(Annotation):
         xs = self.coordinates[::2]
         ys = self.coordinates[1::2]
         return min(xs), min(ys), max(xs), max(ys)
+    
+    def draw_annotation(self, canvas, new_width, new_height):
+        scaled_coords = [coord * new_width if i % 2 == 0 else coord * new_height for i, coord in enumerate(self.coordinates)]
+        self.canvas_id = canvas.create_polygon(*scaled_coords, outline="purple", fill='', tags="annotation")
 
 
 
@@ -126,6 +148,17 @@ class KeypointAnnotation(Annotation):
         xs = [x for x, y, v in self.coordinates]
         ys = [y for x, y, v in self.coordinates]
         return min(xs), min(ys), max(xs), max(ys)
+    
+    def draw_annotation(self, canvas, new_width, new_height):
+        for x, y, v in self.coordinates:
+            scaled_x = x * new_width
+            scaled_y = y * new_height
+            radius = 3
+            canvas.create_oval(
+                scaled_x - radius, scaled_y - radius,
+                scaled_x + radius, scaled_y + radius,
+                fill="orange", outline="black", tags="annotation"
+            )
 
 
 class SemanticSegmentationAnnotation(Annotation):

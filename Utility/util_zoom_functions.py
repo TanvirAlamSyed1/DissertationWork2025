@@ -103,79 +103,9 @@ def update_image_size(self, focus_x=None, focus_y=None, scale_factor=1.0):
 
 
 def redraw_annotation(self, annotation, new_width, new_height):
-    """Redraws a single annotation at the correct scaled position."""
-
-    ann_type = annotation.annotation_type
-    rel_coords = annotation.coordinates
-
-    if isinstance(annotation, RectangleAnnotation):
-        x1, y1, x2, y2 = [rel_coords[i] * new_width if i % 2 == 0 else rel_coords[i] * new_height for i in range(4)]
-        canvas_id = self.canvas.create_rectangle(x1, y1, x2, y2, outline="red", tags="annotation")
-        annotation.canvas_id = canvas_id
-
-    elif isinstance(annotation, EllipseAnnotation):
-        x1 = rel_coords[0] * new_width
-        y1 = rel_coords[1] * new_height
-        x2 = rel_coords[2] * new_width
-        y2 = rel_coords[3] * new_height
-        canvas_id = self.canvas.create_oval(x1, y1, x2, y2, outline="red", tags="annotation")
-        annotation.canvas_id = canvas_id
-    
-    elif isinstance(annotation, CircleAnnotation):
-        x1 = rel_coords[0] * new_width
-        y1 = rel_coords[1] * new_height
-        x2 = rel_coords[2] * new_width
-        y2 = rel_coords[3] * new_height
-        canvas_id = self.canvas.create_oval(x1, y1, x2, y2, outline="red", tags="annotation")
-        annotation.canvas_id = canvas_id
-
-
-    elif isinstance(annotation, FreehandAnnotation):
-        if len(rel_coords) < 4:
-            return
-
-        scaled_points = [
-            rel_coords[i] * new_width if i % 2 == 0 else rel_coords[i] * new_height
-            for i in range(len(rel_coords))
-        ]
-        canvas_id = self.canvas.create_line(*scaled_points, fill="red", width=2, tags="annotation")
-        annotation.canvas_id = canvas_id
-    
-    elif isinstance(annotation, KeypointAnnotation):
-        dot_ids = []
-        for x_norm, y_norm, v in annotation.coordinates:
-            x = x_norm * new_width
-            y = y_norm * new_height
-
-            print(f"🎯 Drawing keypoint at ({x:.1f}, {y:.1f}) from norm ({x_norm:.3f}, {y_norm:.3f})")
-
-            r = 3
-            dot = self.canvas.create_oval(
-                x - r, y - r, x + r, y + r,
-                fill="green", outline="", tags="annotation"
-            )
-            dot_ids.append(dot)
-        annotation.canvas_id = dot_ids
-
-
-
-    elif isinstance(annotation, PolygonAnnotation):
-        if len(rel_coords) >= 6:
-            scaled_points = [
-                rel_coords[i] * new_width if i % 2 == 0 else rel_coords[i] * new_height
-                for i in range(len(rel_coords))
-            ]
-            canvas_id = self.canvas.create_polygon(
-                scaled_points,
-                outline="red",
-                fill="",
-                width=2,
-                tags="annotation"
-            )
-            annotation.canvas_id = canvas_id
-
-
+    annotation.draw_annotation(self.canvas, new_width, new_height)
     return annotation
+
 
 
 
