@@ -49,6 +49,7 @@ class MainPage(tk.Frame):
         self.current_annotation = None
 
         self.annotation_classes = {
+            "View": NoneType,
             "Rectangle": RectangleAnnotation,
             "Ellipse": EllipseAnnotation,
             "Circle": CircleAnnotation,
@@ -57,7 +58,7 @@ class MainPage(tk.Frame):
             "Keypoint": KeypointAnnotation,
         }
 
-        self.current_annotation_type = RectangleAnnotation
+        self.current_annotation_type = NoneType
         self.notification_number = 0
         self.user_notification_preference = True
 

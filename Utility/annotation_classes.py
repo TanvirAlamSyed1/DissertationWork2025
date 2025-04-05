@@ -35,7 +35,22 @@ class Annotation:
         """Should be implemented by subclasses."""
         raise NotImplementedError
 
+class NoneType(Annotation):
 
+    def to_dict(self, img_width=None, img_height=None):
+        """Should be implemented by subclasses."""
+        raise NotImplementedError
+
+    def normalize_coordinates(self, img_width, img_height):
+        """Should be implemented by subclasses."""
+        raise NotImplementedError
+
+    def get_absolute_bounds(self):
+        """Should be implemented by subclasses."""
+        raise NotImplementedError
+    def draw_annotation(self, canvas, new_width, new_height):
+        """Should be implemented by subclasses."""
+        raise NotImplementedError
 class RectangleAnnotation(Annotation):
     def __init__(self, start_x, start_y, end_x, end_y):
         super().__init__("Rectangle", [start_x, start_y, end_x, end_y])

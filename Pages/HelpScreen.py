@@ -53,14 +53,31 @@ class HelpPage(tk.Frame):
 
         ---
 
+        ⌨️ KEYBOARD SHORTCUTS
+        - Ctrl + Z: Undo last annotation
+        - Ctrl + Y: Redo
+        - Delete / Backspace: Delete selected annotation
+        - Ctrl + S: Save current annotations
+        - Ctrl + O: Open an image
+        - Ctrl + E: Export annotations
+        - Ctrl + M: Export masks
+        - Ctrl + H: Show help
+        - Ctrl + D: Finalise Polygon Annotation / Keypoints
+        - ← → : Navigate between images
+        - Esc: Cancel current annotation or exit tool
+
+        ---
+
         🧠 TIPS
-        - Right-click on canvas to delete selected annotation.
+        - Right-click on canvas to delete the selected annotation.
         - Use zoom controls at bottom to zoom in/out.
         - Use undo/redo to correct mistakes.
         - Use the annotation list (right sidebar) to navigate/edit annotations.
 
         Enjoy annotating!
         """
+
+        
         text_widget.insert("1.0", help_text)
         text_widget.config(state="disabled")
         # We use the switch_window_button in order to call the show_frame() method as a lambda function

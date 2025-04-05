@@ -182,6 +182,8 @@ def on_release(self, event):
     raw_x = self.canvas.canvasx(event.x)
     raw_y = self.canvas.canvasy(event.y)
     end_x, end_y = self.clamp_to_image_bounds(raw_x, raw_y)
+    if self.current_annotation_type == NoneType:
+        return
 
     if self.current_annotation_type in [KeypointAnnotation, PolygonAnnotation]:
         return
