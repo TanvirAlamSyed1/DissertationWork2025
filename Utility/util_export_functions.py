@@ -2,6 +2,9 @@
 import json
 import os
 import xml.etree.ElementTree as ET
+import tkinter.filedialog as fd
+from Utility.util_mask_generator import generate_semantic_masks
+import json
 
 def load_all_annotations(annotation_folder):
     all_data = []
@@ -90,6 +93,24 @@ def export_to_coco(data, export_path):
                 }
                 annotations.append(coco_ann)
                 annotation_id += 1
+            
+            elif ann_type == "Freehand":
+                seg = [
+                    coord * img_w if i % 2 == 0 else coord * img_h
+                    for i, coord in enumerate(ann["coordinates"])
+                ]
+                coco_ann = {
+                    "id": annotation_id,
+                    "image_id": image_id,
+                    "category_id": categories[label],
+                    "segmentation": [seg],
+                    "bbox": get_bbox_from_polygon(seg),
+                    "area": calculate_polygon_area(seg),
+                    "iscrowd": ann.get("iscrowd", 0)
+                }
+                annotations.append(coco_ann)
+                annotation_id += 1
+
             
             elif ann_type in ["Circle", "Ellipse"]:
                 x1, y1, x2, y2 = ann["coordinates"]

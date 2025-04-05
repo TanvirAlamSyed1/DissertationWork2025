@@ -3,6 +3,7 @@ from tkinter import filedialog, messagebox,simpledialog
 from Utility.annotation_classes import *
 import json
 import os
+from Utility.util_mask_generator import generate_semantic_masks
 from Utility.util_export_functions import (
     load_all_annotations,
     export_to_coco,
@@ -241,7 +242,7 @@ def download_annotations(self):
 
     export_format = simpledialog.askstring(
         "Export Format",
-        "Enter format: COCO / YOLO / PascalVOC"
+        "Enter format: COCO / YOLO / PascalVOC / Mask"
     )
     if not export_format:
         return
@@ -272,6 +273,21 @@ def download_annotations(self):
         os.makedirs(export_folder, exist_ok=True)
         export_to_pascal_voc(data, export_folder)
         messagebox.showinfo("Exported", f"Pascal VOC XMLs saved in:\n{export_folder}")
+
+    elif format_lower == "mask":
+        export_folder = os.path.join(base_folder, "Masks")
+        os.makedirs(export_folder, exist_ok=True)
+        
+        # ✅ COCO conversion needed before mask export
+        temp_coco_path = os.path.join(export_folder, "temp_annotations_coco.json")
+        export_to_coco(data, temp_coco_path)
+        with open(temp_coco_path, "r") as f:
+            coco_data = json.load(f)
+
+        generate_semantic_masks(coco_data, export_folder)
+
+        os.remove(temp_coco_path)  # clean up
+        messagebox.showinfo("Exported", f"Semantic masks saved in:\n{export_folder}")
 
     else:
         messagebox.showerror("Unsupported Format", f"Format '{export_format}' is not supported.")
