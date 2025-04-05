@@ -242,7 +242,7 @@ def download_annotations(self):
 
     export_format = simpledialog.askstring(
         "Export Format",
-        "Enter format: COCO / YOLO / PascalVOC / Mask"
+        "Enter format: COCO / YOLO / PascalVOC / Mask / JSON"
     )
     if not export_format:
         return
@@ -254,8 +254,18 @@ def download_annotations(self):
     base_folder = filedialog.askdirectory(title="Select Output Folder")
     if not base_folder:
         return
+    if format_lower == "json":
+        export_folder = os.path.join(base_folder, "AllAnnotations")
+        os.makedirs(export_folder, exist_ok=True)
 
-    if format_lower == "coco":
+        export_path = os.path.join(export_folder, "annotations_all.json")
+        import json
+        with open(export_path, "w") as f:
+            json.dump(data, f, indent=2)
+
+        messagebox.showinfo("Exported", f"All annotations saved to:\n{export_path}")
+
+    elif format_lower == "coco":
         export_folder = os.path.join(base_folder, "COCO")
         os.makedirs(export_folder, exist_ok=True)
         export_path = os.path.join(export_folder, "annotations_coco.json")

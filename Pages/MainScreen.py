@@ -132,6 +132,7 @@ class MainPage(tk.Frame):
             tk.Button(button_frame, text=text, command=command).pack(side=tk.LEFT, padx=5, pady=5)
 
         tk.Button(bottom_toolbar, text="Go to the Main Screen", command=self.switch_to_welcome_page).pack(side=tk.RIGHT, padx=5, pady=5)
+        tk.Button(bottom_toolbar, text="Help", command=self.switch_to_help_page).pack(side=tk.RIGHT, padx=5, pady=5)
 
     def setup_canvas(self):
         self.canvas = tk.Canvas(self.main_content, bg="white")
@@ -162,6 +163,13 @@ class MainPage(tk.Frame):
         try:
             from Pages.WelcomeScreen import WelcomePage
             self.controller.show_frame(WelcomePage)
+        except (ImportError, AttributeError) as e:
+            print(f"Error: {e}")
+    
+    def switch_to_help_page(self):
+        try:
+            from Pages.HelpScreen import HelpPage
+            self.controller.show_frame(HelpPage)
         except (ImportError, AttributeError) as e:
             print(f"Error: {e}")
 

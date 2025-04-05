@@ -4,6 +4,7 @@ import tkinter as tk
 from tkinter import ttk
 from Pages.WelcomeScreen import WelcomePage
 from Pages.MainScreen import MainPage
+from Pages.HelpScreen import HelpPage
 
 # Allowing us to extend from the Tk class
 class testClass(tk.Tk):
@@ -23,7 +24,7 @@ class testClass(tk.Tk):
 
         # We will now create a dictionary of frames
         self.frames = {}
-        for F in (WelcomePage, MainPage):
+        for F in (WelcomePage, MainPage,HelpPage):
             frame = F(container, self)
             # the windows class acts as the root window for the frames.
             self.frames[F] = frame
