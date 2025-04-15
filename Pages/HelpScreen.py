@@ -28,9 +28,9 @@ class HelpPage(tk.Frame):
         ✏️ ANNOTATION TOOLS
         - Rectangle: Draw bounding boxes.
         - Ellipse: Draw elliptical annotations.
-        - Polygon: Click to create points, double-click to close.
+        - Polygon: Click to create points, press D when done.
         - Freehand: Hold and draw like a pen (used for masks).
-        - Keypoints: Place landmarks on the image.
+        - Keypoints: Place landmarks on the image, press D when done
 
         Use the left toolbar to switch tools.
 
@@ -46,7 +46,7 @@ class HelpPage(tk.Frame):
         - COCO: Object detection + segmentation (polygon)
         - YOLO: Object detection (bounding boxes)
         - Pascal VOC: XML-based format
-        - Mask: PNG mask images for segmentation
+        - Mask: PNG mask images for segmentation, this is created using the freehand drawings
         - JSON: Raw full annotation backup
 
         Use 'Download All Annotations' to export.

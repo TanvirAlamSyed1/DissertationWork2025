@@ -259,7 +259,6 @@ def download_annotations(self):
         os.makedirs(export_folder, exist_ok=True)
 
         export_path = os.path.join(export_folder, "annotations_all.json")
-        import json
         with open(export_path, "w") as f:
             json.dump(data, f, indent=2)
 
