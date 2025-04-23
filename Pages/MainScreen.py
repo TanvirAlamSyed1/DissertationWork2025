@@ -1,9 +1,9 @@
 import tkinter as tk
-from tkinter import ttk, messagebox
+from tkinter import ttk
 from Utility import (
     util_image_functions,
     util_annotation_function,
-    util_button_functions,
+    util_import_functions,
     util_zoom_functions,
     util_export_functions
 )
@@ -78,28 +78,27 @@ class MainPage(tk.Frame):
         
         self.edit_toggle = tk.BooleanVar(value=False)
         tk.Checkbutton(left_toolbar, text="Edit Mode", variable=self.edit_toggle, command=self.toggle_edit_mode).pack(pady=5, padx=5, anchor="w")
-
-        self.search_entry = tk.Entry(search_frame)
-        self.search_entry.pack(side=tk.LEFT, fill=tk.X, expand=True)
-        tk.Button(search_frame, text="Go", width=4, command=self.go_to_image_by_name).pack(side=tk.RIGHT, padx=(5, 0))
-
-        # Buttons
-        buttons = [
-            ("Load Folder", self.load_folder),
-            ("Save Annotations Of Current Image", self.save_annotation),
-            ("Load Annotations Of Current Image", self.load_annotation),
-            ("Download All Annotations", self.download_annotations),
-            ("Export Annotated Image",self.save_image)
-        ]
-        for text, cmd in buttons:
-            tk.Button(left_toolbar, text=text, command=cmd).pack(pady=10, padx=5, fill=tk.X)
-
+        
         # Annotation type
         tk.Label(left_toolbar, text="Annotation Type:").pack(pady=(10, 5))
         self.annotation_type = ttk.Combobox(left_toolbar, values=list(self.annotation_classes.keys()), state="readonly")
         self.annotation_type.set("Rectangle")
         self.annotation_type.pack(pady=(0, 10), padx=5, fill=tk.X)
         self.annotation_type.bind("<<ComboboxSelected>>", self.change_annotation_type)
+
+        self.search_entry = tk.Entry(search_frame)
+        self.search_entry.pack(side=tk.LEFT, fill=tk.X, expand=True)
+        tk.Button(search_frame, text="Go", width=4, command=self.go_to_image_by_name).pack(side=tk.RIGHT, padx=(5, 0))
+        # Buttons
+        buttons = [
+            ("Load Folder", self.load_folder),
+            ("Load Annotations Of Current Image", self.load_annotation),
+            ("Save Annotations Of Current Image", self.save_annotation),
+            ("Download All Annotations", self.download_annotations),
+            ("Export Annotated Image",self.save_image)
+        ]
+        for text, cmd in buttons:
+            tk.Button(left_toolbar, text=text, command=cmd).pack(pady=10, padx=5, fill=tk.X)
 
     def setup_right_sidebar(self):
         sidebar = tk.Frame(self.main_content, bg='lightgray', width=250)
@@ -181,19 +180,19 @@ class MainPage(tk.Frame):
     def clear_annotation(self): util_annotation_function.clear_annotation(self)
     def undo_annotation(self, event=None): util_annotation_function.undo_annotation(self, event)
     def redo_annotation(self, event=None): util_annotation_function.redo_annotation(self, event)
-    def load_folder(self,event=None): util_button_functions.load_folder(self,event)
+    def load_folder(self,event=None): util_import_functions.load_folder(self,event)
     def load_image(self): util_image_functions.load_image(self)
     def prev_image(self,event=None): util_image_functions.prev_image(self,event)
-    def load_annotation(self,event=None): util_button_functions.load_annotations(self,event)
+    def load_annotation(self,event=None): util_import_functions.load_annotations(self,event)
     def next_image(self,event=None): util_image_functions.next_image(self,event)
     def on_mouse_wheel(self, event): util_zoom_functions.on_mouse_wheel(self, event)
     def update_image_size(self, fx, fy, scale): util_zoom_functions.update_image_size(self, fx, fy, scale)
-    def download_annotations(self): util_button_functions.download_annotations(self)
-    def save_annotation(self,event=None): util_button_functions.save_annotations(self,event)
+    def download_annotations(self): util_import_functions.download_annotations(self)
+    def save_annotation(self,event=None): util_import_functions.save_annotations(self,event)
     def change_annotation_type(self, event): util_annotation_function.change_annotation_type(self, event)
-    def redraw_annotations(self): util_button_functions.redraw_annotations(self)
+    def redraw_annotations(self): util_import_functions.redraw_annotations(self)
     def redraw_annotation(self, ann, w, h): return util_zoom_functions.redraw_annotation(self, ann, w, h)
-    def label_annotation(self, event=None): util_button_functions.label_annotation(self, event)
+    def label_annotation(self, event=None): util_import_functions.label_annotation(self, event)
     def on_annotation_selected(self, event): util_annotation_function.on_annotation_selected(self, event)
     def clamp_to_image_bounds(self, x, y): return util_annotation_function.clamp_to_image_bounds(self, x, y)
     def is_within_image_bounds(self, ann): return util_annotation_function.is_within_image_bounds(self, ann)
@@ -201,7 +200,7 @@ class MainPage(tk.Frame):
         util_annotation_function.finalise_keypoints(self, event)
         util_annotation_function.finalise_polygon(self, event)
     def delete_specific_annotation(self, event=None): util_annotation_function.delete_specific_annotation(self, event)
-    def show_listbox_menu(self, event): util_button_functions.show_listbox_menu(self, event)
+    def show_listbox_menu(self, event): util_import_functions.show_listbox_menu(self, event)
     def go_to_image_by_name(self): util_image_functions.go_to_image_by_name(self)
     def save_image(self):util_image_functions.save_image(self)
     def redraw_temp_annotations(self):util_zoom_functions.redraw_temp_annotations(self)
@@ -210,6 +209,9 @@ class MainPage(tk.Frame):
     def on_edit_press(self,event=None):util_annotation_function.on_edit_press(self,event)
     def on_edit_drag(self,event=None):util_annotation_function.on_edit_drag(self,event)
     def on_edit_release(self,event=None):util_annotation_function.on_edit_release(self,event)
-    def toggle_lock_annotation(self):util_button_functions.toggle_lock_annotation(self)
+    def toggle_lock_annotation(self):util_import_functions.toggle_lock_annotation(self)
+    def import_coco(self):util_import_functions.import_coco(self)
+    def import_yolo(self):util_import_functions.import_yolo(self)
+    def import_pascal_voc(self):util_import_functions.import_pascal_voc(self)
 
     

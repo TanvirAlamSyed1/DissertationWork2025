@@ -290,7 +290,6 @@ def on_edit_drag(self, event):
         preview.coordinates = preview_coords
 
     if self.is_within_image_bounds(preview):
-        # ✅ Move is valid → update
         ann.coordinates = preview_coords
         self.drag_start = (x, y)
         self.redraw_annotations()
