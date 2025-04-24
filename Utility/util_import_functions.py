@@ -24,12 +24,15 @@ def show_listbox_menu(self, event):
 
 def load_folder(self, event=None):
     """Allows user to select an input folder and loads all image files."""
-    self.input_folder = filedialog.askdirectory(title="Select Input Folder")
-    
-    if not self.input_folder:
-        return  # User cancelled selection
+    selected_folder = filedialog.askdirectory(title="Select Input Folder")
 
-    # Check for image files first
+    if not selected_folder:
+        messagebox.showinfo("Cancelled", "No folder selected. Keeping the current image set.")
+        return  # ❌ User cancelled, exit safely without wiping state
+
+    self.input_folder = selected_folder
+
+    # Check for image files
     self.image_files = [
         f for f in os.listdir(self.input_folder)
         if f.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', '.bmp'))
@@ -48,173 +51,88 @@ def load_folder(self, event=None):
     self.current_image_index = 0
     self.load_image()
 
-
-
-def save_annotations(self, event=None):
-    """Saves all annotations for the current image as a JSON file."""
-    if not self.image_files or self.current_image_index == -1:
-        messagebox.showwarning("No Image", "No image is currently loaded.")
-        return
-
-    current_image = self.image_files[self.current_image_index]
-    image_name = os.path.basename(current_image)
-
-    # ✅ Save to annotation folder, not output_folder
-    annotations_file = os.path.join(self.annotation_folder, f"{os.path.splitext(image_name)[0]}_annotations.json")
-
-    if not self.image:
-        messagebox.showerror("Error", "No image loaded.")
-        return
-
-    img_width, img_height = self.image.width, self.image.height
-
-    annotations_data = {
-        "image_name": image_name,
-        "image_width": img_width,
-        "image_height": img_height,
-        "annotations": [a.to_dict(img_width, img_height) for a in self.annotations],
-    }
-
-    try:
-        with open(annotations_file, "w") as f:
-            json.dump(annotations_data, f, indent=4)
-        messagebox.showinfo("Saved", f"Annotations saved to {annotations_file}")
-    except IOError as e:
-        messagebox.showerror("Error", f"Failed to save annotations: {e}")
     
-def load_annotations(self,event=None):
-    """Loads annotations for the currently displayed image."""
+def load_annotations(self, event=None):
     if not self.image_files or self.current_image_index == -1:
         messagebox.showwarning("No Image", "No image is currently loaded.")
         return
 
     current_image = self.image_files[self.current_image_index]
     image_name = os.path.basename(current_image)
-    annotations_file = os.path.join(self.annotation_folder, f"{os.path.splitext(image_name)[0]}_annotations.json")
+    annotations_file = os.path.normpath((os.path.join(self.annotation_folder, f"{os.path.splitext(image_name)[0]}_annotations.json")))
+    print(f"[DEBUG] Looking for annotations at: {annotations_file}")
 
     if not os.path.exists(annotations_file):
-          # --- If not found, ask user to import from COCO or YOLO ---
-        choice = messagebox.askquestion(
-            "Annotations Not Found",
-            f"No local annotations found for '{image_name}'.\nWould you like to import from COCO or YOLO?",
-            icon='question'
-        )
-
-        if choice != "yes":
+        if messagebox.askquestion("Annotations Not Found",
+                                  f"No local annotations found for '{image_name}'.\nWould you like to import from COCO or YOLO?",
+                                  icon='question') != "yes":
             return
 
-        # Ask which format
-        format_choice = simpledialog.askstring("Import Format", "Enter format: COCO / YOLO / Pascal VOC").strip().lower()
+        format_choice = simpledialog.askstring("Import Format", "Enter format: COCO / YOLO / Pascal VOC")
+        if not format_choice:
+            return
 
-        if format_choice == "coco":
-            import_coco(self)
-        elif format_choice == "pascal voc" or format_choice =="voc":
-            import_pascal_voc(self)
-        elif format_choice == "yolo":
-            import_yolo(self)
+        format_map = {
+            "coco": import_coco,
+            "yolo": import_yolo,
+            "pascal voc": import_pascal_voc,
+            "voc": import_pascal_voc
+        }
+
+        handler = format_map.get(format_choice.strip().lower())
+        if handler:
+            handler(self)
         else:
-            messagebox.showerror("Invalid Format", "Only 'COCO' or 'YOLO' supported for import.")
+            messagebox.showerror("Invalid Format", "Only 'COCO', 'YOLO', or 'Pascal VOC' supported for import.")
+        return
+
     try:
         with open(annotations_file, "r") as f:
-            annotations_data = json.load(f)
+            data = json.load(f)
     except json.JSONDecodeError:
         messagebox.showerror("Error", "Failed to load JSON. The file might be corrupted.")
         return
 
-    if "annotations" not in annotations_data or "image_name" not in annotations_data:
-        messagebox.showwarning("Error", "No annotations found in the file or missing image reference.")
+    if data.get("image_name") != image_name or "annotations" not in data:
+        messagebox.showwarning("Error", "Mismatch or missing annotation data.")
         return
 
-    # Validate that the annotation file matches the current image
-    if annotations_data["image_name"] != image_name:
-        messagebox.showwarning("Mismatch", f"Annotations belong to {annotations_data['image_name']}, not {image_name}.")
-        return
-    
+    self.annotations.clear()
+    img_w, img_h = self.image.width, self.image.height
 
-    self.annotations.clear()  # Clear existing annotations
-    self.canvas.update_idletasks()
-    canvas_width = self.canvas.winfo_width()
-    canvas_height = self.canvas.winfo_height()
+    def scale_coords(coords):
+        return [coords[i] * img_w if i % 2 == 0 else coords[i] * img_h for i in range(len(coords))]
 
-    for ann in annotations_data["annotations"]:
+    type_handlers = {
+        "Rectangle": lambda c: RectangleAnnotation(*scale_coords(c)),
+        "Ellipse": lambda c: EllipseAnnotation(*scale_coords(c)),
+        "Circle": lambda c: CircleAnnotation(*scale_coords(c)),
+        "Freehand": lambda c: FreehandAnnotation(scale_coords(c)),
+        "Polygon": lambda c: PolygonAnnotation(scale_coords(c)),
+        "Keypoint": lambda c: KeypointAnnotation([(x, y, v if len(k) > 2 else 2)
+                                                  for k in c if isinstance(k, (list, tuple)) and len(k) >= 2
+                                                  for x, y, *v in [k]])
+    }
+
+    for ann in data["annotations"]:
         ann_type = ann.get("type")
-        rel_coords = ann.get("coordinates", [])
+        coords = ann.get("coordinates", [])
         label = ann.get("label", "No Label")
 
-        if ann_type and rel_coords:
-            if ann_type == "Rectangle" and len(rel_coords) == 4:
-                abs_coords = [
-                    rel_coords[0] * self.image.width,
-                    rel_coords[1] * self.image.height,
-                    rel_coords[2] * self.image.width,
-                    rel_coords[3] * self.image.height
-                ]
-                annotation = RectangleAnnotation(*abs_coords)
+        if ann_type in type_handlers and coords:
+            try:
+                annotation = type_handlers[ann_type](coords)
+                annotation.label = label
+                annotation.id = ann.get("id", "")
+                annotation.iscrowd = ann.get("iscrowd", 0)
+                self.annotations.append(annotation)
+            except Exception as e:
+                print(f"Skipping annotation due to error: {e}")
 
-            elif ann_type == "Ellipse" and len(rel_coords) == 4:
-                abs_coords = [
-                    rel_coords[0] * self.image.width,
-                    rel_coords[1] * self.image.height,
-                    rel_coords[2] * self.image.width,
-                    rel_coords[3] * self.image.height
-                ]
-                annotation = EllipseAnnotation(*abs_coords)
-
-            elif ann_type == "Freehand" and len(rel_coords) % 2 == 0:
-                abs_coords = []
-                for i in range(0, len(rel_coords), 2):
-                    x = rel_coords[i] * self.image.width
-                    y = rel_coords[i + 1] * self.image.height
-                    abs_coords.extend([x, y])  # ✅ creates flat list
-
-                annotation = FreehandAnnotation(abs_coords)
-            
-            elif ann_type == "Circle" and len(rel_coords) == 4:
-                abs_coords = [
-                    rel_coords[0] * self.image.width,
-                    rel_coords[1] * self.image.height,
-                    rel_coords[2] * self.image.width,
-                    rel_coords[3] * self.image.height
-                ]
-                annotation = CircleAnnotation(*abs_coords)
-
-            
-            elif ann_type == "Keypoint" and isinstance(rel_coords, list):
-                abs_coords = []
-                for kp in rel_coords:
-                    if not isinstance(kp, (list, tuple)) or len(kp) < 2:
-                        continue
-
-                    x_norm = kp[0]
-                    y_norm = kp[1]
-                    v = kp[2] if len(kp) > 2 else 2
-
-                    abs_coords.append((x_norm, y_norm, v))
-
-                annotation = KeypointAnnotation(abs_coords)
-
-
-            elif ann_type == "Polygon" and len(rel_coords) % 2 == 0:
-                abs_coords = []
-                for i in range(0, len(rel_coords), 2):
-                    x = rel_coords[i] * self.image.width
-                    y = rel_coords[i + 1] * self.image.height
-                    abs_coords.extend([x, y])  # flat list of x, y
-
-                annotation = PolygonAnnotation(abs_coords)
-
-            else:
-                continue  # Skip unrecognized or improperly formatted annotations
-
-            annotation.label = label
-            annotation.id = ann.get("id", "")
-            annotation.iscrowd = ann.get("iscrowd", 0) 
-            self.annotations.append(annotation)
-        
-    
     self.redraw_annotations()
     self.update_annotation_listbox()
     messagebox.showinfo("Loaded", f"Annotations loaded from {annotations_file}")
+
 
 
 

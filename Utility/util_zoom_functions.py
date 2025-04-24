@@ -27,8 +27,6 @@ def on_mouse_wheel(self, event):
     if (self.current_annotation_type in [KeypointAnnotation, PolygonAnnotation] and (self.keypoints or self.polygon_points)):
         self.redraw_temp_annotations()
 
-        
-
     
 def redraw_temp_annotations(self):
     """Redraws in-progress keypoints and polygon using zoomed coords."""
@@ -55,9 +53,6 @@ def redraw_temp_annotations(self):
             scaled_points,
             outline="blue", fill="", width=2, tags="temp_annotation"
         )
-
-
-
 
 def update_image_size(self, focus_x=None, focus_y=None, scale_factor=1.0):
     """Resizes the image and adjusts annotations accordingly while maintaining zoom focus."""

@@ -67,6 +67,9 @@ class MainPage(tk.Frame):
         self.main_content.pack(fill=tk.BOTH, expand=True)
 
     def setup_left_toolbar(self):
+        self.image_name_label = tk.Label(self.main_content, text="", font=("Arial", 12), anchor="w")
+        self.image_name_label.pack(fill=tk.X, padx=5, pady=(0, 5))
+
         left_toolbar = tk.Frame(self.main_content, bg='lightgray', width=200)
         left_toolbar.pack(side=tk.LEFT, fill=tk.Y, padx=5, pady=5)
         left_toolbar.pack_propagate(False)
@@ -82,7 +85,7 @@ class MainPage(tk.Frame):
         # Annotation type
         tk.Label(left_toolbar, text="Annotation Type:").pack(pady=(10, 5))
         self.annotation_type = ttk.Combobox(left_toolbar, values=list(self.annotation_classes.keys()), state="readonly")
-        self.annotation_type.set("Rectangle")
+        self.annotation_type.set("View")
         self.annotation_type.pack(pady=(0, 10), padx=5, fill=tk.X)
         self.annotation_type.bind("<<ComboboxSelected>>", self.change_annotation_type)
 
@@ -188,7 +191,7 @@ class MainPage(tk.Frame):
     def on_mouse_wheel(self, event): util_zoom_functions.on_mouse_wheel(self, event)
     def update_image_size(self, fx, fy, scale): util_zoom_functions.update_image_size(self, fx, fy, scale)
     def download_annotations(self): util_import_functions.download_annotations(self)
-    def save_annotation(self,event=None): util_import_functions.save_annotations(self,event)
+    def save_annotation(self,event=None): util_export_functions.save_annotations(self,event)
     def change_annotation_type(self, event): util_annotation_function.change_annotation_type(self, event)
     def redraw_annotations(self): util_import_functions.redraw_annotations(self)
     def redraw_annotation(self, ann, w, h): return util_zoom_functions.redraw_annotation(self, ann, w, h)

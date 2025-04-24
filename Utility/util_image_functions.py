@@ -53,6 +53,11 @@ def load_image(self):
         self.undone_annotations.clear()
         self.polygon_points = []
         self.polygon_preview_id = None
+        
+        # Update image name label
+        image_filename = self.image_files[self.current_image_index]
+        self.image_name_label.config(text=f"📷 Image: {image_filename}")
+
 
         # ✅ Draw new image
         self.canvas.create_image(self.image_x, self.image_y, anchor=tk.NW, image=self.photo, tags="image")

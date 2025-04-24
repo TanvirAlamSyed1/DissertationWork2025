@@ -1,10 +1,88 @@
 # Utility/util_export_functions.py
 import json
 import os
+from tkinter import messagebox, simpledialog
 import xml.etree.ElementTree as ET
 import tkinter.filedialog as fd
 from Utility.util_mask_generator import generate_semantic_masks
 import json
+
+def save_annotations(self, event=None):
+    if not self.image_files or self.current_image_index == -1:
+        messagebox.showwarning("No Image", "No image is currently loaded.")
+        return
+
+    format = simpledialog.askstring("Save Format", "Enter format (COCO / YOLO / VOC / Mask / JSON):")
+    if not format:
+        return
+
+    format = format.strip().lower()
+    image_file = self.image_files[self.current_image_index]
+    image_name = os.path.basename(image_file)
+    base_name = os.path.splitext(image_name)[0]
+
+    os.makedirs(self.annotation_folder, exist_ok=True)
+    os.makedirs(self.annotated_image_folder, exist_ok=True)
+
+    annotations_data = {
+        "image_name": image_name,
+        "image_width": self.image.width,
+        "image_height": self.image.height,
+        "annotations": [a.to_dict(self.image.width, self.image.height) for a in self.annotations],
+    }
+
+    # Show warning if exporting to a lossy format
+    lossy_formats = ["yolo", "voc", "pascal", "pascalvoc"]
+    unsupported_types = {"Polygon", "Keypoint", "Freehand", "Ellipse", "Circle"}
+    used_types = {a.annotation_type for a in self.annotations}
+
+    if format in lossy_formats and used_types & unsupported_types:
+        messagebox.showwarning(
+            "Partial Export Warning",
+            "Some annotation types (e.g., polygons, keypoints, freehand, ellipses, circles) are not supported by "
+            f"the selected format ({format.upper()}). Only bounding boxes will be included in the export."
+        )
+
+    try:
+        if format == "json":
+            path = os.path.join(self.annotation_folder, f"{base_name}_annotations.json")
+            with open(path, "w") as f:
+                json.dump(annotations_data, f, indent=4)
+            messagebox.showinfo("Saved", f"Saved as JSON: {path}")
+
+        elif format == "coco":
+            path = os.path.join(self.annotation_folder, f"{base_name}_coco.json")
+            from Utility.util_export_functions import export_to_coco
+            export_to_coco([annotations_data], path)
+            messagebox.showinfo("Saved", f"Saved as COCO JSON: {path}")
+
+        elif format == "yolo":
+            from Utility.util_export_functions import export_to_yolo
+            yolo_folder = os.path.join(self.annotation_folder, f"{base_name}_yolo")
+            export_to_yolo([annotations_data], yolo_folder)
+            messagebox.showinfo("Saved", f"Saved as YOLO TXT in: {yolo_folder}")
+
+        elif format in ["voc", "pascal", "pascalvoc"]:
+            from Utility.util_export_functions import export_to_pascal_voc
+            voc_folder = os.path.join(self.annotation_folder, f"{base_name}_voc")
+            export_to_pascal_voc([annotations_data], voc_folder)
+            messagebox.showinfo("Saved", f"Saved as VOC XML in: {voc_folder}")
+
+        elif format == "mask":
+            from Utility.util_export_functions import export_to_coco
+            from Utility.util_mask_generator import generate_semantic_masks
+            temp_path = os.path.join(self.annotation_folder, f"{base_name}_temp_coco.json")
+            export_to_coco([annotations_data], temp_path)
+            generate_semantic_masks(json.load(open(temp_path)), self.annotation_folder)
+            os.remove(temp_path)
+            messagebox.showinfo("Saved", f"Saved as PNG mask to: {self.annotation_folder}")
+
+        else:
+            messagebox.showerror("Invalid Format", f"Format '{format}' is not supported.")
+
+    except Exception as e:
+        messagebox.showerror("Save Error", f"Error saving annotations: {e}")
+
 
 def load_all_annotations(annotation_folder):
     all_data = []

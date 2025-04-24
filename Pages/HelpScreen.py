@@ -53,18 +53,20 @@ class HelpPage(tk.Frame):
 
         ---
 
-        ⌨️ KEYBOARD SHORTCUTS
-        - Ctrl + Z: Undo last annotation
-        - Ctrl + Y: Redo
-        - Delete / Backspace: Delete selected annotation
-        - Ctrl + S: Save current annotations
-        - Ctrl + O: Open an image
-        - Ctrl + E: Export annotations
-        - Ctrl + M: Export masks
-        - Ctrl + H: Show help
-        - Ctrl + D: Finalise Polygon Annotation / Keypoints
-        - ← → : Navigate between images
-        - Esc: Cancel current annotation or exit tool
+        📖 Keyboard Shortcuts
+
+        Ctrl + O  - Open Image
+        Ctrl + S  - Save Annotations
+        Ctrl + E  - Export Annotations
+        Ctrl + Z  - Undo
+        Ctrl + Y  - Redo
+        Ctrl + D  - Finalize Polygon/Keypoints
+        Ctrl + F  - Freehand Tool
+        Ctrl + L  - Lock/Unlock Annotation
+        Ctrl + P  - Previous Image
+        Ctrl + N  - Next Image
+        Delete    - Delete Selected Annotation
+        Esc       - Cancel Current Tool / Annotation
 
         ---
 
