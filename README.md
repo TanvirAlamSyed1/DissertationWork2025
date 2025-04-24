@@ -56,5 +56,8 @@ Redo	Ctrl + Y
  - Semantic Segmentation
  - YOLO / COCO format export
 
-👩‍💻 Author
+👨‍💻 Author
 Made with 💙 by Tanvir Alam Syed
+Student ID: 21326844
+Final Year Project @ Manchester Metropolitan University (2024–25)
+Supervisor: Dr Indranath Chatterjee
