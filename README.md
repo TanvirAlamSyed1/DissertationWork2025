@@ -57,7 +57,7 @@ Redo	Ctrl + Y
  - YOLO / COCO format export
 
 👨‍💻 Author
-Made with 💙 by Tanvir Alam Syed
-Student ID: 21326844
-Final Year Project @ Manchester Metropolitan University (2024–25)
-Supervisor: Dr Indranath Chatterjee
+- Made with 💙 by Tanvir Alam Syed
+- Student ID: 21326844
+- Final Year Project @ Manchester Metropolitan University (2024–25)
+- Supervisor: Dr Indranath Chatterjee
