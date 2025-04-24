@@ -41,9 +41,15 @@ A cross-platform desktop application for annotating images with bounding boxes, 
    - Export the annotated image using "Export Annotated Image".
 
 ⌨️ Shortcuts
-Finalize keypoint/polygon annotation -	f
-Undo	Ctrl + Z
-Redo	Ctrl + Y
+Action | Shortcut
+Finalize polygon/keypoint | F
+Undo | Ctrl + Z
+Redo | Ctrl + Y
+Save annotations | Ctrl + S
+Load annotations | Ctrl + L
+Next image | Ctrl + N
+Previous image | Ctrl + P
+Load image folder | Ctrl + F
 
 📸 Supported Formats
 - .jpg
