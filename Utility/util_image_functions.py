@@ -4,6 +4,7 @@ from Utility.annotation_classes import *
 from tkinter import messagebox
 from PIL import Image, ImageTk,ImageDraw
 import tkinter as tk
+import datetime
 
 def load_image(self):
     if self.user_notification_preference:
@@ -34,6 +35,7 @@ def load_image(self):
         self.image = Image.open(image_path)
 
         new_width, new_height = self.image.width, self.image.height
+        print("Loaded image size:", self.image.width, self.image.height)
         self.photo = ImageTk.PhotoImage(self.image)
 
         # ✅ Completely clear canvas
@@ -117,7 +119,10 @@ def save_image(self):
 
     image_filename = self.image_files[self.current_image_index]
     base_name = os.path.splitext(image_filename)[0]
-    save_path = os.path.join(annotated_folder, f"{base_name}_annotated.png")
+
+    timestamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+    save_path = os.path.join(self.annotated_image_folder, f"{base_name}_annotated_{timestamp}.png")
+
 
     # Copy the image and get draw context
     image_copy = self.image.copy()
@@ -145,7 +150,7 @@ def save_image(self):
             if isinstance(annotation, RectangleAnnotation) and len(abs_coords) == 4:
                 draw.rectangle(abs_coords, outline="red", width=3)
 
-            elif isinstance(annotation, EllipseAnnotation) and len(abs_coords) == 4:
+            elif isinstance(annotation, EllipseAnnotation) or isinstance(annotation,CircleAnnotation) and len(abs_coords) == 4:
                 draw.ellipse(abs_coords, outline="red", width=3)
 
             elif isinstance(annotation, FreehandAnnotation) and len(abs_coords) >= 4:

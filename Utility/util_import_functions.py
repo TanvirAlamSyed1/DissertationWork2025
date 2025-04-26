@@ -1,16 +1,11 @@
 import tkinter as tk
 import xml.etree.ElementTree as ET
 from tkinter import filedialog, messagebox,simpledialog
-from Utility.annotation_classes import *
 import json
 import os
+from Utility.annotation_classes import *
 from Utility.util_mask_generator import generate_semantic_masks
-from Utility.util_export_functions import (
-    load_all_annotations,
-    export_to_coco,
-    export_to_yolo,
-    export_to_pascal_voc
-)
+
 
 def show_listbox_menu(self, event):
     widget = event.widget
@@ -20,7 +15,6 @@ def show_listbox_menu(self, event):
         self.annotation_listbox.selection_clear(0, tk.END)
         self.annotation_listbox.selection_set(index)
         self.listbox_menu.post(event.x_root, event.y_root)
-
 
 def load_folder(self, event=None):
     """Allows user to select an input folder and loads all image files."""
@@ -50,8 +44,7 @@ def load_folder(self, event=None):
 
     self.current_image_index = 0
     self.load_image()
-
-    
+   
 def load_annotations(self, event=None):
     if not self.image_files or self.current_image_index == -1:
         messagebox.showwarning("No Image", "No image is currently loaded.")
@@ -133,12 +126,9 @@ def load_annotations(self, event=None):
     self.update_annotation_listbox()
     messagebox.showinfo("Loaded", f"Annotations loaded from {annotations_file}")
 
-
-
-
 def redraw_annotations(self):
     """Redraws all annotations on the canvas without deleting the image."""
-    self.canvas.delete("annotation")
+    self.canvas.delete("annotation")  # Only delete previous annotations, not the image!
 
     if not self.image:
         return
@@ -147,16 +137,13 @@ def redraw_annotations(self):
     current_width = int(self.image.width * self.zoom_factor)
     current_height = int(self.image.height * self.zoom_factor)
 
-    self.canvas.create_image(0, 0, anchor=tk.NW, image=self.photo, tags="image")
+    # DO NOT re-draw the image here again!
+    # self.canvas.create_image(0, 0, anchor=tk.NW, image=self.photo, tags="image")
 
     for annotation in self.annotations:
         self.redraw_annotation(annotation, current_width, current_height)
 
     self.update_annotation_listbox()
-    self.canvas.create_image(0, 0, anchor=tk.NW, image=self.photo, tags="image")
-    self.canvas.tag_lower("image")  # 🧠 Always keep image in the background
-
-
 
 def label_annotation(self, event):
     """Allows the user to label an annotation when they double-click on it in the Listbox."""
@@ -173,7 +160,6 @@ def label_annotation(self, event):
     if label:  
         annotation.label = label  # Update label
         self.update_annotation_listbox()  # Refresh listbox
-
 
 def download_annotations(self):
     if not self.annotation_folder:
@@ -267,7 +253,6 @@ def import_yolo(self):
         class_list = [line.strip() for line in f.readlines()]
 
     self.annotations.clear()
-    img_w, img_h = self.image.width, self.image.height
 
     with open(txt_file, "r") as f:
         for line in f:
@@ -278,19 +263,21 @@ def import_yolo(self):
             class_id, x_center, y_center, width, height = map(float, parts)
             label = class_list[int(class_id)]
 
-            x1 = (x_center - width / 2)
-            y1 = (y_center - height / 2)
-            x2 = (x_center + width / 2)
-            y2 = (y_center + height / 2)
+            x1 = x_center - width / 2
+            y1 = y_center - height / 2
+            x2 = x_center + width / 2
+            y2 = y_center + height / 2
+            print((x1, y1, x2, y2))
 
+            # 🚀 Create rectangle directly with normalized coords
             annotation = RectangleAnnotation(x1, y1, x2, y2)
             annotation.label = label
+
             self.annotations.append(annotation)
 
     self.redraw_annotations()
     self.update_annotation_listbox()
     messagebox.showinfo("Import Successful", "YOLO annotations imported.")
-import xml.etree.ElementTree as ET
 
 def import_pascal_voc(self):
     voc_folder = filedialog.askdirectory(title="Select Pascal VOC Folder")
@@ -345,69 +332,128 @@ def import_pascal_voc(self):
     messagebox.showinfo("Import Successful", f"Pascal VOC annotations loaded for {image_name}.")
 
 def import_coco(self):
-    import_file = filedialog.askopenfilename(title="Select COCO JSON", filetypes=[("JSON Files", "*.json")])
-    if not import_file:
+    from tkinter import filedialog, messagebox
+    import json
+    import os
+
+    import_path = filedialog.askopenfilename(title="Select COCO JSON", filetypes=[("JSON files", "*.json")])
+    if not import_path:
         return
 
     try:
-        with open(import_file, "r") as f:
+        with open(import_path, "r") as f:
             coco_data = json.load(f)
     except Exception as e:
         messagebox.showerror("Error", f"Failed to load JSON: {e}")
         return
 
-    image_name = os.path.basename(self.image_files[self.current_image_index])
-    current_image_id = None
+    current_image = self.image_files[self.current_image_index]
+    base_image_name = os.path.splitext(os.path.basename(current_image))[0].lower()
 
-    # Find matching image entry
+    img_entry = None
     for img in coco_data.get("images", []):
-        if img["file_name"] == image_name:
-            current_image_id = img["id"]
+        if base_image_name in os.path.splitext(img["file_name"])[0].lower():
+            img_entry = img
             break
 
-    if current_image_id is None:
-        messagebox.showwarning("Image Not Found", "Current image not found in COCO JSON.")
+    if not img_entry:
+        messagebox.showwarning("Not Found", "Image not found in COCO JSON.")
         return
 
+    img_w, img_h = img_entry["width"], img_entry["height"]
+    image_id = img_entry["id"]
+
     self.annotations.clear()
-    img_w, img_h = self.image.width, self.image.height
     cat_id_to_label = {cat["id"]: cat["name"] for cat in coco_data.get("categories", [])}
 
     for ann in coco_data.get("annotations", []):
-        if ann["image_id"] != current_image_id:
+        if ann.get("image_id") != image_id:
             continue
 
-        label = cat_id_to_label.get(ann["category_id"], "Unknown")
+        label = cat_id_to_label.get(ann.get("category_id"), "No Label")
         iscrowd = ann.get("iscrowd", 0)
 
-        if "bbox" in ann:
-            x, y, w, h = ann["bbox"]
-            annotation = RectangleAnnotation(
-                x / img_w, y / img_h, (x + w) / img_w, (y + h) / img_h
-            )
-        elif "segmentation" in ann and ann["segmentation"]:
-            points = ann["segmentation"][0]  # assume 1 polygon
-            norm_coords = [
-                pt / img_w if i % 2 == 0 else pt / img_h for i, pt in enumerate(points)
-            ]
-            annotation = PolygonAnnotation(norm_coords)
-        elif "keypoints" in ann:
-            keypoints = ann["keypoints"]
-            kp_list = []
-            for i in range(0, len(keypoints), 3):
-                kp_list.append((
-                    keypoints[i] / img_w,
-                    keypoints[i + 1] / img_h,
-                    keypoints[i + 2]
-                ))
-            annotation = KeypointAnnotation(kp_list)
-        else:
-            continue
+        annotation = None
 
-        annotation.label = label
-        annotation.iscrowd = iscrowd
-        self.annotations.append(annotation)
+        # --- Rectangle ---
+        if "bbox" in ann and not ann.get("segmentation") and not ann.get("keypoints"):
+            x, y, w, h = ann["bbox"]
+            if x > 1.0 or y > 1.0 or w > 1.0 or h > 1.0:
+                x /= img_w
+                y /= img_h
+                w /= img_w
+                h /= img_h
+            annotation = RectangleAnnotation(x, y, x + w, y + h)
+
+        # --- Polygon / Freehand / Circle / Ellipse ---
+        elif "segmentation" in ann and ann["segmentation"]:
+            points = ann["segmentation"][0]
+
+            if any(pt > 1.0 for pt in points):
+                norm_points = [
+                    (pt / img_w) if i % 2 == 0 else (pt / img_h)
+                    for i, pt in enumerate(points)
+                ]
+            else:
+                norm_points = points
+
+            if looks_like_circle_or_ellipse(norm_points):
+                x_coords = norm_points[::2]
+                y_coords = norm_points[1::2]
+                x_min, x_max = min(x_coords), max(x_coords)
+                y_min, y_max = min(y_coords), max(y_coords)
+
+                if abs((x_max - x_min) - (y_max - y_min)) < 0.05:  # nearly circular
+                    annotation = CircleAnnotation(x_min, y_min, x_max, y_max)
+                else:
+                    annotation = EllipseAnnotation(x_min, y_min, x_max, y_max)
+            else:
+                if len(norm_points) <= 75:
+                    annotation = PolygonAnnotation(norm_points)
+                else:
+                    annotation = FreehandAnnotation(norm_points)
+
+        # --- Keypoints ---
+        elif "keypoints" in ann and ann["keypoints"]:
+            kps = ann["keypoints"]
+            keypoints = []
+            for i in range(0, len(kps), 3):
+                x = kps[i]
+                y = kps[i+1]
+                v = kps[i+2]
+                if x > 1.0 or y > 1.0:
+                    x /= img_w
+                    y /= img_h
+                keypoints.append((x, y, v))
+            annotation = KeypointAnnotation(keypoints)
+
+        if annotation:
+            annotation.label = label
+            annotation.iscrowd = iscrowd
+            self.annotations.append(annotation)
 
     self.redraw_annotations()
     self.update_annotation_listbox()
-    messagebox.showinfo("Import Successful", "COCO annotations imported.")
+    messagebox.showinfo("Imported", "COCO annotations loaded successfully!")
+
+def looks_like_circle_or_ellipse(points):
+    if len(points) < 20:
+        return False
+
+    xs = points[::2]
+    ys = points[1::2]
+    cx = (max(xs) + min(xs)) / 2
+    cy = (max(ys) + min(ys)) / 2
+    rx = (max(xs) - min(xs)) / 2
+    ry = (max(ys) - min(ys)) / 2
+
+    radius_errors = []
+    for x, y in zip(xs, ys):
+        dx = x - cx
+        dy = y - cy
+        if rx > 0 and ry > 0:
+            error = abs((dx / rx) ** 2 + (dy / ry) ** 2 - 1)
+            radius_errors.append(error)
+
+    average_error = sum(radius_errors) / len(radius_errors)
+    return average_error < 0.1

@@ -98,7 +98,7 @@ def update_image_size(self, focus_x=None, focus_y=None, scale_factor=1.0):
 
 
 def redraw_annotation(self, annotation, new_width, new_height):
-    annotation.draw_annotation(self.canvas, new_width, new_height)
+    annotation.canvas_id = annotation.draw_annotation(self.canvas, new_width, new_height)
     return annotation
 
 

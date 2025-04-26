@@ -58,9 +58,11 @@ class RectangleAnnotation(Annotation):
     def get_absolute_bounds(self):
         x1, y1, x2, y2 = self.coordinates
         return min(x1, x2), min(y1, y2), max(x1, x2), max(y1, y2)
+    
     def draw_annotation(self, canvas, new_width, new_height):
-        x1, y1, x2, y2 = [self.coordinates[i] * new_width if i % 2 == 0 else self.coordinates[i] * new_height for i in range(4)]
+        x1, y1, x2, y2 = [self.coordinates[i] * (new_width if i % 2 == 0 else new_height) for i in range(4)]
         self.canvas_id = canvas.create_rectangle(x1, y1, x2, y2, outline="red", tags="annotation")
+        return self.canvas_id
 
 
 class EllipseAnnotation(Annotation):
@@ -72,8 +74,9 @@ class EllipseAnnotation(Annotation):
         return min(x1, x2), min(y1, y2), max(x1, x2), max(y1, y2)
     
     def draw_annotation(self, canvas, new_width, new_height):
-        x1, y1, x2, y2 = [self.coordinates[i] * new_width if i % 2 == 0 else self.coordinates[i] * new_height for i in range(4)]
+        x1, y1, x2, y2 = [self.coordinates[i] * (new_width if i % 2 == 0 else new_height) for i in range(4)]
         self.canvas_id = canvas.create_oval(x1, y1, x2, y2, outline="blue", tags="annotation")
+        return self.canvas_id
 
 class CircleAnnotation(Annotation):
     def __init__(self, x1, y1, x2, y2):
@@ -100,8 +103,9 @@ class CircleAnnotation(Annotation):
         return min(x1, x2), min(y1, y2), max(x1, x2), max(y1, y2)
     
     def draw_annotation(self, canvas, new_width, new_height):
-        x1, y1, x2, y2 = [self.coordinates[i] * new_width if i % 2 == 0 else self.coordinates[i] * new_height for i in range(4)]
+        x1, y1, x2, y2 = [self.coordinates[i] * (new_width if i % 2 == 0 else new_height) for i in range(4)]
         self.canvas_id = canvas.create_oval(x1, y1, x2, y2, outline="green", tags="annotation")
+        return self.canvas_id
 
 
 
@@ -115,11 +119,9 @@ class FreehandAnnotation(Annotation):
         return min(xs), min(ys), max(xs), max(ys)
     
     def draw_annotation(self, canvas, new_width, new_height):
-        scaled_points = [coord * new_width if i % 2 == 0 else coord * new_height for i, coord in enumerate(self.coordinates)]
-        self.canvas_id = canvas.create_line(*scaled_points, fill="orange", tags="annotation", smooth=True)
-    
-
-
+        scaled_points = [self.coordinates[i] * (new_width if i % 2 == 0 else new_height) for i in range(len(self.coordinates))]
+        self.canvas_id = canvas.create_line(*scaled_points, fill="orange", smooth=True, tags="annotation")
+        return self.canvas_id
 class PolygonAnnotation(Annotation):
     def __init__(self, points):
         super().__init__("Polygon", points)
@@ -136,8 +138,9 @@ class PolygonAnnotation(Annotation):
         return min(xs), min(ys), max(xs), max(ys)
     
     def draw_annotation(self, canvas, new_width, new_height):
-        scaled_coords = [coord * new_width if i % 2 == 0 else coord * new_height for i, coord in enumerate(self.coordinates)]
-        self.canvas_id = canvas.create_polygon(*scaled_coords, outline="purple", fill='', tags="annotation")
+        scaled_points = [self.coordinates[i] * (new_width if i % 2 == 0 else new_height) for i in range(len(self.coordinates))]
+        self.canvas_id = canvas.create_polygon(*scaled_points, outline="purple", fill='', tags="annotation")
+        return self.canvas_id
 
 
 
@@ -166,24 +169,14 @@ class KeypointAnnotation(Annotation):
         return min(xs), min(ys), max(xs), max(ys)
     
     def draw_annotation(self, canvas, new_width, new_height):
-        # Delete any previous keypoints if re-drawing
-        if self.canvas_id:
-            for dot_id in self.canvas_id:
-                canvas.delete(dot_id)
-
-        dot_ids = []
-        for x_norm, y_norm, v in self.coordinates:
-            x = x_norm * new_width
-            y = y_norm * new_height
+        self.canvas_id = []
+        for x, y, _ in self.coordinates:
+            x_canvas = x * new_width
+            y_canvas = y * new_height
             r = 3
-            dot = canvas.create_oval(
-                x - r, y - r, x + r, y + r,
-                fill="green", outline="", tags="annotation"
-            )
-            dot_ids.append(dot)
-
-        self.canvas_id = dot_ids
-
+            dot_id = canvas.create_oval(x_canvas - r, y_canvas - r, x_canvas + r, y_canvas + r, fill="green", outline="", tags="annotation")
+            self.canvas_id.append(dot_id)
+        return self.canvas_id
 
 class SemanticSegmentationAnnotation(Annotation):
     def __init__(self, mask_filename):

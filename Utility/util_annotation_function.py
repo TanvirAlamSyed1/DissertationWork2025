@@ -74,10 +74,12 @@ def on_press(self, event):
     self.start_x, self.start_y = self.clamp_to_image_bounds(raw_x, raw_y)
 
     if self.current_annotation_type == FreehandAnnotation:
+        self.current_freehand_points = []  # Start collecting fresh points
         self.current_annotation = self.canvas.create_line(
             self.start_x, self.start_y, self.start_x, self.start_y,
-            fill="red", width=2, tags="annotation"
+            fill="red", width=2, tags="temp_annotation"
         )
+
 
     elif self.current_annotation_type == KeypointAnnotation:
         # Clamp for drawing bounds
@@ -155,12 +157,21 @@ def on_drag(self, event):
 
     
     elif self.current_annotation_type == FreehandAnnotation:
-        cur_x, cur_y = self.clamp_to_image_bounds(cur_x, cur_y)
+        cur_x = self.canvas.canvasx(event.x)
+        cur_y = self.canvas.canvasy(event.y)
+
+        # Draw live on canvas
         self.canvas.coords(
             self.current_annotation,
             *self.canvas.coords(self.current_annotation),
             cur_x, cur_y
-            )
+        )
+
+        # 🔥 Record normalized coordinates immediately
+        x_img = (cur_x - self.image_x) / self.zoom_factor
+        y_img = (cur_y - self.image_y) / self.zoom_factor
+        self.current_freehand_points.extend([x_img, y_img])
+
     elif self.current_annotation_type == CircleAnnotation:
         self.canvas.delete("temp_annotation")
 
@@ -182,6 +193,7 @@ def on_release(self, event):
     raw_x = self.canvas.canvasx(event.x)
     raw_y = self.canvas.canvasy(event.y)
     end_x, end_y = self.clamp_to_image_bounds(raw_x, raw_y)
+
     if self.current_annotation_type == NoneType:
         return
 
@@ -190,53 +202,55 @@ def on_release(self, event):
 
     self.canvas.delete("temp_annotation")
 
-    # ✅ Use zoomed dimensions for normalization
-    zoomed_width = self.image.width * self.zoom_factor
-    zoomed_height = self.image.height * self.zoom_factor
+    # 🛠 Convert from canvas coords to raw image coords
+    start_img_x = (self.start_x - self.image_x) / self.zoom_factor
+    start_img_y = (self.start_y - self.image_y) / self.zoom_factor
+    end_img_x = (end_x - self.image_x) / self.zoom_factor
+    end_img_y = (end_y - self.image_y) / self.zoom_factor
 
     annotation = None
     canvas_id = None
+    print(start_img_x, start_img_y, end_img_x, end_img_y)
 
     if self.current_annotation_type == RectangleAnnotation:
-        annotation = RectangleAnnotation(self.start_x, self.start_y, end_x, end_y)
+        annotation = RectangleAnnotation(start_img_x, start_img_y, end_img_x, end_img_y)
         canvas_id = self.canvas.create_rectangle(self.start_x, self.start_y, end_x, end_y, outline="red", tags="annotation")
 
     elif self.current_annotation_type == EllipseAnnotation:
-        x1, y1 = self.start_x, self.start_y
-        x2, y2 = end_x, end_y
-        annotation = EllipseAnnotation(x1, y1, x2, y2)
-        canvas_id = self.canvas.create_oval(x1, y1, x2, y2, outline="red", tags="annotation")
+        annotation = EllipseAnnotation(start_img_x, start_img_y, end_img_x, end_img_y)
+        canvas_id = self.canvas.create_oval(self.start_x, self.start_y, end_x, end_y, outline="red", tags="annotation")
 
     elif self.current_annotation_type == FreehandAnnotation:
-        points = self.canvas.coords(self.current_annotation)
-        if len(points) <= 4:
+        if len(self.current_freehand_points) <= 4:
             return
-        annotation = FreehandAnnotation(points)
-        canvas_id = self.current_annotation
-    
-    elif self.current_annotation_type == CircleAnnotation:
-        cx, cy = self.start_x, self.start_y
-        radius = min(abs(end_x - cx), abs(end_y - cy))
 
+        annotation = FreehandAnnotation(self.current_freehand_points)
+        canvas_id = self.current_annotation
+
+
+    elif self.current_annotation_type == CircleAnnotation:
+        cx = (self.start_x - self.image_x) / self.zoom_factor
+        cy = (self.start_y - self.image_y) / self.zoom_factor
+        radius = min(abs(end_img_x - cx), abs(end_img_y - cy))
         x1 = cx - radius
         y1 = cy - radius
         x2 = cx + radius
         y2 = cy + radius
-
         annotation = CircleAnnotation(x1, y1, x2, y2)
-        canvas_id = self.canvas.create_oval(x1, y1, x2, y2, outline="red", tags="annotation")
+        canvas_id = self.canvas.create_oval(self.start_x, self.start_y, end_x, end_y, outline="red", tags="annotation")
 
-
-    # ❌ Skip invalid annotations
+    # ❗ Important: Do NOT normalize here
     if annotation and not self.is_within_image_bounds(annotation):
         self.canvas.delete(canvas_id)
         return
 
-    # ✅ Normalize to zoomed image size
-    annotation.coordinates = annotation.normalize_coordinates(zoomed_width, zoomed_height)
+    # Save annotation with raw pixel coordinates
+    annotation.coordinates = annotation.normalize_coordinates(self.image.width, self.image.height)
     annotation.canvas_id = canvas_id
     self.annotations.append(annotation)
     self.update_annotation_listbox()
+    self.redraw_annotations()
+
 
 def on_edit_press(self, event):
     if not self.edit_mode or not self.image:
