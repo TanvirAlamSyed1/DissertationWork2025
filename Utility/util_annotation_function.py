@@ -400,11 +400,24 @@ def finalise_keypoints(self, event=None):
     self.keypoint_canvas_ids = []
 
 def clear_annotation(self):
-    """Clears all annotations."""
+    """Clears all annotations, with a user confirmation."""
+    if not self.annotations:
+        return  # Nothing to clear
+
+    confirm = messagebox.askyesno(
+        "Confirm Clear",
+        "Are you sure you want to clear all annotations? This action cannot be undone.",
+        parent=self.controller
+    )
+    if not confirm:
+        return  # User cancelled
+
+    # Proceed with clearing
     self.canvas.delete("annotation")
     self.annotations.clear()
     self.undone_annotations.clear()
     self.update_annotation_listbox()
+
 
 def undo_annotation(self, event=None):
     """Undoes the last annotation action."""

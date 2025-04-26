@@ -34,27 +34,47 @@ def save_annotations(self, event=None):
 
     try:
         if format == "json":
+            messagebox.showinfo(
+                "JSON Format",
+                "JSON format will include all annotation types as-is. Ensure that your annotations are compatible with your intended use."
+            )
             path = os.path.join(self.annotation_folder, f"{base_name}_annotations.json")
             with open(path, "w") as f:
                 json.dump(annotations_data, f, indent=4)
             messagebox.showinfo("Saved", f"Saved as JSON: {path}")
 
         elif format == "coco":
+            messagebox.showinfo(
+                "COCO Format",
+                "COCO format supports bounding boxes, polygons, and keypoints. Ensure that your annotations are compatible with these types."
+            )
             path = os.path.join(self.annotation_folder, f"{base_name}_coco.json")
             export_to_coco([annotations_data], path)
             messagebox.showinfo("Saved", f"Saved as COCO JSON: {path}")
 
         elif format == "yolo":
+            messagebox.showwarning(
+                "YOLO Format Limitation",
+                "YOLO format supports only rectangular bounding boxes. Annotations like polygons, keypoints, and masks will not be included in the export."
+            )
             yolo_folder = os.path.join(self.annotation_folder, f"{base_name}_yolo")
             export_to_yolo([annotations_data], yolo_folder)
             messagebox.showinfo("Saved", f"Saved as YOLO TXT in: {yolo_folder}")
 
         elif format in ["voc", "pascal", "pascalvoc"]:
+            messagebox.showwarning(
+                "Pascal VOC Format Limitation",
+                "Pascal VOC format supports only rectangular bounding boxes. Annotations like polygons, keypoints, and masks will not be included in the export."
+            )
             voc_folder = os.path.join(self.annotation_folder, f"{base_name}_voc")
             export_to_pascal_voc([annotations_data], voc_folder)
             messagebox.showinfo("Saved", f"Saved as VOC XML in: {voc_folder}")
 
         elif format == "mask":
+            messagebox.showwarning(
+                "Mask Format Limitation",
+                "Mask format supports only polygon annotations. Other annotation types will not be included in the export."
+            )
             temp_path = os.path.join(self.annotation_folder, f"{base_name}_temp_coco.json")
             export_to_coco([annotations_data], temp_path)
             generate_semantic_masks(json.load(open(temp_path)), self.annotation_folder)
