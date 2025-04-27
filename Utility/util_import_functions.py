@@ -237,58 +237,57 @@ def toggle_lock_annotation(self):
         self.update_annotation_listbox()
         
 def import_yolo(self):
-    yolo_folder = filedialog.askdirectory(title="Select YOLO Annotation Folder")
-    if not yolo_folder:
+    folder = filedialog.askdirectory(title="Select YOLO Folder")
+    if not folder:
         return
 
-    image_name = os.path.splitext(self.image_files[self.current_image_index])[0]
-    txt_file = os.path.join(yolo_folder, f"{image_name}.txt")
-    classes_file = os.path.join(yolo_folder, "classes.txt")
+    img_w, img_h = self.image.width, self.image.height
+    base_name = os.path.splitext(self.image_files[self.current_image_index])[0]
+    txt_path = os.path.join(folder, f"{base_name}.txt")
+    classes_path = os.path.join(folder, "classes.txt")
 
-    if not os.path.exists(txt_file) or not os.path.exists(classes_file):
-        messagebox.showerror("Missing Files", "YOLO .txt or classes.txt file is missing.")
+    if not os.path.exists(txt_path) or not os.path.exists(classes_path):
+        messagebox.showerror("Error", "Missing YOLO .txt or classes.txt file.")
         return
 
-    with open(classes_file, "r") as f:
+    with open(classes_path, "r") as f:
         class_list = [line.strip() for line in f.readlines()]
 
-    self.annotations.clear()
+    new_annotations = []
 
-    with open(txt_file, "r") as f:
+    with open(txt_path, "r") as f:
         for line in f:
             parts = line.strip().split()
             if len(parts) != 5:
                 continue
-
-            class_id, x_center, y_center, width, height = map(float, parts)
+            class_id, center_x, center_y, width, height = map(float, parts)
             label = class_list[int(class_id)]
 
-            x1 = x_center - width / 2
-            y1 = y_center - height / 2
-            x2 = x_center + width / 2
-            y2 = y_center + height / 2
-            print((x1, y1, x2, y2))
+            x1 = center_x - width / 2
+            y1 = center_y - height / 2
+            x2 = center_x + width / 2
+            y2 = center_y + height / 2
 
-            # 🚀 Create rectangle directly with normalized coords
-            annotation = RectangleAnnotation(x1, y1, x2, y2)
-            annotation.label = label
+            ann = RectangleAnnotation(x1, y1, x2, y2)
+            ann.label = label
+            new_annotations.append(ann)
 
-            self.annotations.append(annotation)
-
+    self.annotations = new_annotations
     self.redraw_annotations()
     self.update_annotation_listbox()
-    messagebox.showinfo("Import Successful", "YOLO annotations imported.")
+    messagebox.showinfo("Import", f"YOLO import successful: {len(new_annotations)} annotations.")
 
 def import_pascal_voc(self):
-    voc_folder = filedialog.askdirectory(title="Select Pascal VOC Folder")
-    if not voc_folder:
+    folder = filedialog.askdirectory(title="Select Pascal VOC Folder")
+    if not folder:
         return
 
-    image_name = os.path.splitext(self.image_files[self.current_image_index])[0]
-    xml_path = os.path.join(voc_folder, f"{image_name}.xml")
+    img_w, img_h = self.image.width, self.image.height
+    base_name = os.path.splitext(self.image_files[self.current_image_index])[0]
+    xml_path = os.path.join(folder, f"{base_name}.xml")
 
     if not os.path.exists(xml_path):
-        messagebox.showwarning("Not Found", f"No XML file found for {image_name}.")
+        messagebox.showerror("Error", "Missing Pascal VOC XML file.")
         return
 
     try:
@@ -298,38 +297,30 @@ def import_pascal_voc(self):
         messagebox.showerror("Error", f"Failed to parse XML: {e}")
         return
 
-    self.annotations.clear()
-    img_w, img_h = self.image.width, self.image.height
+    new_annotations = []
 
     for obj in root.findall("object"):
-        label = obj.findtext("name", default="unlabeled")
+        label = obj.findtext("name", default="No Label")
         bbox = obj.find("bndbox")
         if bbox is None:
             continue
 
         try:
-            xmin = int(bbox.findtext("xmin"))
-            ymin = int(bbox.findtext("ymin"))
-            xmax = int(bbox.findtext("xmax"))
-            ymax = int(bbox.findtext("ymax"))
+            xmin = int(bbox.findtext("xmin")) / img_w
+            ymin = int(bbox.findtext("ymin")) / img_h
+            xmax = int(bbox.findtext("xmax")) / img_w
+            ymax = int(bbox.findtext("ymax")) / img_h
 
-            # Normalize coordinates
-            x1 = xmin / img_w
-            y1 = ymin / img_h
-            x2 = xmax / img_w
-            y2 = ymax / img_h
-
-            ann = RectangleAnnotation(x1, y1, x2, y2)
+            ann = RectangleAnnotation(xmin, ymin, xmax, ymax)
             ann.label = label
-            ann.iscrowd = int(obj.findtext("difficult", default="0"))
-            self.annotations.append(ann)
+            new_annotations.append(ann)
+        except Exception as e:
+            print(f"Skipping bad annotation: {e}")
 
-        except (ValueError, TypeError):
-            continue
-
+    self.annotations = new_annotations
     self.redraw_annotations()
     self.update_annotation_listbox()
-    messagebox.showinfo("Import Successful", f"Pascal VOC annotations loaded for {image_name}.")
+    messagebox.showinfo("Import", f"Pascal VOC import successful: {len(new_annotations)} annotations.")
 
 def import_coco(self):
     from tkinter import filedialog, messagebox

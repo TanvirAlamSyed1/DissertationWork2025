@@ -9,10 +9,10 @@ class Annotation:
         self.canvas_id = None
         self.iscrowd = 0  
 
-    def to_dict(self, img_width=None, img_height=None):
+    def to_dict(self, img_width=None, img_height=None, normalise=False):
         coords = self.coordinates
-        if img_width and img_height:
-            coords = self.normalize_coordinates(img_width, img_height)
+        if normalise and img_width and img_height:
+            coords = self.normalise_coordinates(img_width, img_height)
 
         return {
             "id": self.id,
@@ -22,7 +22,8 @@ class Annotation:
             "iscrowd": self.iscrowd  
         }
 
-    def normalize_coordinates(self, img_width, img_height):
+
+    def normalise_coordinates(self, img_width, img_height):
         return [
             coord / img_width if i % 2 == 0 else coord / img_height
             for i, coord in enumerate(self.coordinates)
@@ -41,7 +42,7 @@ class NoneType(Annotation):
         """Should be implemented by subclasses."""
         raise NotImplementedError
 
-    def normalize_coordinates(self, img_width, img_height):
+    def normalise_coordinates(self, img_width, img_height):
         """Should be implemented by subclasses."""
         raise NotImplementedError
 
@@ -126,7 +127,7 @@ class PolygonAnnotation(Annotation):
     def __init__(self, points):
         super().__init__("Polygon", points)
 
-    def normalize_coordinates(self, img_width, img_height):
+    def normalise_coordinates(self, img_width, img_height):
         return [
             x / img_width if i % 2 == 0 else x / img_height
             for i, x in enumerate(self.coordinates)
@@ -149,7 +150,7 @@ class KeypointAnnotation(Annotation):
         super().__init__("Keypoint", keypoints)
         self.canvas_id = []
 
-    def normalize_coordinates(self, img_width, img_height):
+    def normalise_coordinates(self, img_width, img_height):
         return [
             (x / img_width, y / img_height, v)
             for x, y, v in self.coordinates
@@ -182,7 +183,7 @@ class SemanticSegmentationAnnotation(Annotation):
     def __init__(self, mask_filename):
         super().__init__("SemanticSegmentation", mask_filename)
 
-    def normalize_coordinates(self, img_width, img_height):
+    def normalise_coordinates(self, img_width, img_height):
         return self.coordinates  # Just return the filename
 
     def get_absolute_bounds(self):

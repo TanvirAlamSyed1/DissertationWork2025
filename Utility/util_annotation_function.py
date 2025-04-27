@@ -245,7 +245,7 @@ def on_release(self, event):
         return
 
     # Save annotation with raw pixel coordinates
-    annotation.coordinates = annotation.normalize_coordinates(self.image.width, self.image.height)
+    annotation.coordinates = annotation.normalise_coordinates(self.image.width, self.image.height)
     annotation.canvas_id = canvas_id
     self.annotations.append(annotation)
     self.update_annotation_listbox()
@@ -352,7 +352,7 @@ def finalise_polygon(self, event=None):
         annotation.canvas_id = canvas_id
 
         # ✅ Normalize using raw image dimensions (not zoomed!)
-        annotation.coordinates = annotation.normalize_coordinates(self.image.width, self.image.height)
+        annotation.coordinates = annotation.normalise_coordinates(self.image.width, self.image.height)
 
         self.annotations.append(annotation)
         self.update_annotation_listbox()

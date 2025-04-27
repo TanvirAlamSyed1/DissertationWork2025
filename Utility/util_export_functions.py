@@ -32,6 +32,7 @@ def save_annotations(self, event=None):
         "annotations": [ann.to_dict(self.image.width, self.image.height) for ann in self.annotations],
     }
 
+
     try:
         if format == "json":
             messagebox.showinfo(
@@ -101,6 +102,8 @@ def export_to_yolo(data, export_folder):
     label_map = {}
 
     for entry in data:
+        img_w = entry["image_width"]
+        img_h = entry["image_height"]
         image_name = entry["image_name"]
         base_name = os.path.splitext(image_name)[0]
 
@@ -114,16 +117,17 @@ def export_to_yolo(data, export_folder):
             label = ann["label"]
             class_id = label_map.setdefault(label, len(label_map))
 
-            x1, y1, x2, y2 = ann["coordinates"]  # these are already normalized
-            print( x1, y1, x2, y2 )
+            x1, y1, x2, y2 = ann["coordinates"]
+            print(x1,y1,x2,y2)
 
+            # 🔥 NEW: No scaling! Assume x1,y1,x2,y2 are normalized 0-1
             center_x = (x1 + x2) / 2
             center_y = (y1 + y2) / 2
             width = abs(x2 - x1)
             height = abs(y2 - y1)
+            print(center_x,center_y,width,height)
 
             lines.append(f"{class_id} {center_x:.6f} {center_y:.6f} {width:.6f} {height:.6f}")
-
 
         with open(yolo_file, 'w') as f:
             f.write("\n".join(lines))
@@ -134,8 +138,13 @@ def export_to_yolo(data, export_folder):
         for label in sorted(label_map, key=lambda x: label_map[x]):
             f.write(f"{label}\n")
 
+
+
+    
 def export_to_pascal_voc(data, export_folder):
     os.makedirs(export_folder, exist_ok=True)
+    skipped = 0
+    converted = 0
 
     for entry in data:
         image_name = entry["image_name"]
@@ -153,28 +162,50 @@ def export_to_pascal_voc(data, export_folder):
         ET.SubElement(size, "depth").text = "3"
 
         for ann in entry["annotations"]:
-            if ann["type"] not in ["Rectangle", "Circle", "Ellipse"]:
+            ann_type = ann["type"]
+            print(ann["coordinates"])
+
+            if ann_type not in ["Rectangle", "Circle", "Ellipse"]:
+                skipped += 1
                 continue
 
-            x1 = int(ann["coordinates"][0] * img_w)
-            y1 = int(ann["coordinates"][1] * img_h)
-            x2 = int(ann["coordinates"][2] * img_w)
-            y2 = int(ann["coordinates"][3] * img_h)
+            x1, y1, x2, y2 = ann["coordinates"]  # 🚨 Already normalized!
+
+            if ann_type in ["Circle", "Ellipse"]:
+                converted += 1
+
+            # 🚨 Multiply normalized values back to pixel coordinates
+            xmin = int(x1 * img_w)
+            ymin = int(y1 * img_h)
+            xmax = int(x2 * img_w)
+            ymax = int(y2 * img_h)
+
+            # Sort coordinates properly
+            xmin, xmax = sorted([xmin, xmax])
+            ymin, ymax = sorted([ymin, ymax])
 
             obj = ET.SubElement(annotation, "object")
-            ET.SubElement(obj, "name").text = ann["label"]
+            ET.SubElement(obj, "name").text = ann.get("label", "unlabeled")
             ET.SubElement(obj, "pose").text = "Unspecified"
             ET.SubElement(obj, "truncated").text = "0"
             ET.SubElement(obj, "difficult").text = str(ann.get("iscrowd", 0))
 
             bbox = ET.SubElement(obj, "bndbox")
-            ET.SubElement(bbox, "xmin").text = str(min(x1, x2))
-            ET.SubElement(bbox, "ymin").text = str(min(y1, y2))
-            ET.SubElement(bbox, "xmax").text = str(max(x1, x2))
-            ET.SubElement(bbox, "ymax").text = str(max(y1, y2))
+            ET.SubElement(bbox, "xmin").text = str(xmin)
+            ET.SubElement(bbox, "ymin").text = str(ymin)
+            ET.SubElement(bbox, "xmax").text = str(xmax)
+            ET.SubElement(bbox, "ymax").text = str(ymax)
 
         tree = ET.ElementTree(annotation)
-        tree.write(xml_path)
+        tree.write(xml_path, encoding="utf-8")
+
+    # Final message
+    message = "✅ Pascal VOC export completed.\n"
+    if converted:
+        message += f"- {converted} Circle/Ellipse annotations converted to rectangles.\n"
+    if skipped:
+        message += f"- {skipped} non-rectangle annotations skipped."
+    messagebox.showinfo("Pascal VOC Export", message)
 
 # 📤 Export COCO Annotations
 def export_to_coco(data, export_folder):
@@ -277,8 +308,6 @@ def export_to_coco(data, export_folder):
 
     with open(export_folder, "w") as f:
         json.dump(coco_output, f, indent=4)
-
-
 
 # Helper functions
 
