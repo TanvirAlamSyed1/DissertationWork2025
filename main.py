@@ -4,6 +4,7 @@ import tkinter as tk
 from tkinter import ttk
 from Pages.WelcomeScreen import WelcomePage
 from Pages.MainScreen import MainPage
+from Pages.HelpScreen import HelpPage
 
 # Allowing us to extend from the Tk class
 class testClass(tk.Tk):
@@ -11,6 +12,7 @@ class testClass(tk.Tk):
         tk.Tk.__init__(self, *args, **kwargs)
         # Adding a title to the window
         self.wm_title("Annotation Tool")
+        self.protocol("WM_DELETE_WINDOW", self.on_closing)
 
         # creating a frame and assigning it to container
         container = tk.Frame(self, height=1200, width=1000)
@@ -23,7 +25,7 @@ class testClass(tk.Tk):
 
         # We will now create a dictionary of frames
         self.frames = {}
-        for F in (WelcomePage, MainPage):
+        for F in (WelcomePage, MainPage,HelpPage):
             frame = F(container, self)
             # the windows class acts as the root window for the frames.
             self.frames[F] = frame
@@ -37,6 +39,18 @@ class testClass(tk.Tk):
         # raises the current frame to the top
         frame.tkraise()
         print(f"Switched to frame: {cont.__name__}")  # Debug print
+    
+    def on_closing(self):
+        # Check if any unsaved annotations
+        current_frame = self.frames.get(MainPage)
+        if current_frame and hasattr(current_frame, "annotations") and current_frame.annotations:
+            if tk.messagebox.askyesno("Exit Confirmation", "You have unsaved annotations. Are you sure you want to exit?"):
+                self.destroy()
+            else:
+                return
+        else:
+            self.destroy()
+
 
 if __name__ == "__main__":
     testObj = testClass()
