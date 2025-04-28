@@ -5,7 +5,8 @@ from Utility import (
     util_annotation_function,
     util_import_functions,
     util_zoom_functions,
-    util_export_functions
+    util_export_functions,
+    util_edit_mode
 )
 from Utility.annotation_classes import *
 
@@ -159,8 +160,6 @@ class MainPage(tk.Frame):
         self.bind_all("<Control-n>", self.next_image)
         self.bind_all("<Control-p>", self.prev_image)
         self.bind_all("<Control-f>",self.load_folder)
-
-
     # ----- Delegated utility calls below -----
 
     def switch_to_welcome_page(self):
@@ -209,7 +208,7 @@ class MainPage(tk.Frame):
     def save_image(self):util_image_functions.save_image(self)
     def redraw_temp_annotations(self):util_zoom_functions.redraw_temp_annotations(self)
     def toggle_crowd_label(self):util_annotation_function.toggle_crowd_label(self)
-    def toggle_edit_mode(self):self.edit_mode = self.edit_toggle.get()
+    def toggle_edit_mode(self):util_edit_mode(self)
     def on_edit_press(self,event=None):util_annotation_function.on_edit_press(self,event)
     def on_edit_drag(self,event=None):util_annotation_function.on_edit_drag(self,event)
     def on_edit_release(self,event=None):util_annotation_function.on_edit_release(self,event)

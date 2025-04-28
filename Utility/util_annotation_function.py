@@ -249,79 +249,6 @@ def on_release(self, event):
     self.update_annotation_listbox()
     self.redraw_annotations()
 
-
-def on_edit_press(self, event):
-    if not self.edit_mode or not self.image:
-        return
-
-    x = self.canvas.canvasx(event.x)
-    y = self.canvas.canvasy(event.y)
-    clicked_items = self.canvas.find_overlapping(x, y, x, y)
-
-    if not clicked_items:
-        print("❌ No canvas items under cursor.")
-        return
-
-    # Reverse order = topmost item first
-    for item in reversed(clicked_items):
-        # Only check items tagged as "annotation"
-        tags = self.canvas.gettags(item)
-        if "annotation" not in tags:
-            continue
-
-        for annotation in self.annotations:
-            ids = annotation.canvas_id if isinstance(annotation.canvas_id, list) else [annotation.canvas_id]
-            if item in ids:
-                if getattr(annotation, "locked", False):
-                    print("🔒 Locked annotation selected but not editable.")
-                    return
-                self.selected_annotation = annotation
-                self.drag_start = (x, y)
-                print(f"✅ Selected annotation: {annotation.annotation_type}")
-                return
-
-    print("⚠️ No matching annotation found under cursor.")
-
-
-def on_edit_drag(self, event):
-    if not self.selected_annotation or not self.image:
-        return
-
-    x, y = self.canvas.canvasx(event.x), self.canvas.canvasy(event.y)
-    dx = (x - self.drag_start[0]) / self.image.width
-    dy = (y - self.drag_start[1]) / self.image.height
-
-    # Prepare updated coords
-    ann = self.selected_annotation
-    if isinstance(ann, KeypointAnnotation):
-        preview_coords = [(x + dx, y + dy, v) for x, y, v in ann.coordinates]
-        preview = KeypointAnnotation(preview_coords)
-    else:
-        preview_coords = [c + dx if i % 2 == 0 else c + dy for i, c in enumerate(ann.coordinates)]
-        preview = type(ann)(*preview_coords)
-        preview.coordinates = preview_coords
-
-    if self.is_within_image_bounds(preview):
-        ann.coordinates = preview_coords
-        self.drag_start = (x, y)
-        self.redraw_annotations()
-    else:
-        print("🚫 Move rejected: annotation would go out of bounds.")
-
-
-def on_edit_release(self, event):
-    if self.selected_annotation:
-        # Restore default outline color
-        if isinstance(self.selected_annotation.canvas_id, list):
-            for cid in self.selected_annotation.canvas_id:
-                self.canvas.itemconfig(cid, outline="blue" if isinstance(self.selected_annotation, KeypointAnnotation) else "red")
-        else:
-            self.canvas.itemconfig(self.selected_annotation.canvas_id, outline="red")
-        
-    self.selected_annotation = None
-    self.drag_start = None
-
-
 def finalise_polygon(self, event=None):
     if self.current_annotation_type != PolygonAnnotation:
         print("❌ Not in Polygon mode.")
@@ -363,7 +290,6 @@ def finalise_polygon(self, event=None):
         self.canvas.delete(self.polygon_preview_id)
         self.polygon_preview_id = None
     self.polygon_points = []
-
 
 def finalise_keypoints(self, event=None):
     if self.current_annotation_type != KeypointAnnotation:
@@ -416,7 +342,6 @@ def clear_annotation(self):
     self.undone_annotations.clear()
     self.update_annotation_listbox()
 
-
 def undo_annotation(self, event=None):
     """Undoes the last annotation action."""
     if self.annotations:
@@ -443,11 +368,18 @@ def delete_specific_annotation(self, event=None):
         deleted_annotation = self.annotations.pop(index)
         self.undone_annotations.append(deleted_annotation)
 
+        # 🔥 Properly delete from canvas
         if isinstance(deleted_annotation.canvas_id, list):
-            for canvas_id in deleted_annotation.canvas_id:
-                self.canvas.delete(canvas_id)
+            for cid in deleted_annotation.canvas_id:
+                try:
+                    self.canvas.delete(cid)
+                except Exception as e:
+                    print(f"Failed to delete canvas ID {cid}: {e}")
         else:
-            self.canvas.delete(deleted_annotation.canvas_id)
+            try:
+                self.canvas.delete(deleted_annotation.canvas_id)
+            except Exception as e:
+                print(f"Failed to delete canvas ID {deleted_annotation.canvas_id}: {e}")
 
         self.update_annotation_listbox()
 
@@ -460,7 +392,6 @@ def redo_annotation(self, event=None):
 
     self.redraw_annotations()
     self.update_annotation_listbox()
-
 
 def update_annotation_listbox(self):
     """Updates the Listbox with annotation types and labels."""
@@ -524,8 +455,6 @@ def on_annotation_selected(self, event):
         self.canvas.itemconfig(selected_annotation.canvas_id, outline="blue")
     else:
         self.canvas.itemconfig(selected_annotation.canvas_id, outline="blue")
-
-
 
 def change_annotation_type(self, event):
     """Changes the annotation type based on user selection."""
