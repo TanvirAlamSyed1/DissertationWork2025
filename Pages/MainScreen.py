@@ -117,6 +117,7 @@ class MainPage(tk.Frame):
         self.listbox_menu.add_command(label="Delete Annotation", command=self.delete_specific_annotation)
         self.listbox_menu.add_command(label="Toggle Crowd", command=self.toggle_crowd_label)
         self.listbox_menu.add_command(label="Lock/Unlock", command=self.toggle_lock_annotation)
+        self.listbox_menu.add_command(label="Mark/Unmark as Mask", command=self.toggle_mask_annotation)
         self.annotation_listbox.bind("<Button-3>", self.show_listbox_menu)
 
     def setup_bottom_toolbar(self):
@@ -216,5 +217,4 @@ class MainPage(tk.Frame):
     def import_coco(self):util_import_functions.import_coco(self)
     def import_yolo(self):util_import_functions.import_yolo(self)
     def import_pascal_voc(self):util_import_functions.import_pascal_voc(self)
-
-    
+    def toggle_mask_annotation(self):util_annotation_function.toggle_mask_annotation(self)

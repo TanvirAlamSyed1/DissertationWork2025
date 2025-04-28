@@ -121,10 +121,8 @@ def save_image(self):
     base_name = os.path.splitext(image_filename)[0]
 
     timestamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
-    save_path = os.path.join(self.annotated_image_folder, f"{base_name}_annotated_{timestamp}.png")
+    save_path = os.path.join(annotated_folder, f"{base_name}_annotated_{timestamp}.png")
 
-
-    # Copy the image and get draw context
     image_copy = self.image.copy()
     draw = ImageDraw.Draw(image_copy)
     img_w, img_h = self.image.width, self.image.height
@@ -132,39 +130,35 @@ def save_image(self):
     for annotation in self.annotations:
         coords = annotation.coordinates
 
-        # Handle normal coordinate scaling
         if isinstance(annotation, KeypointAnnotation):
-            # Already a list of (x, y, v) tuples — normalized
             points = [(x * img_w, y * img_h) for x, y, _ in coords]
             for x, y in points:
                 r = 4
                 draw.ellipse((x - r, y - r, x + r, y + r), fill="green")
-
         else:
-            # Normalize flat list
             abs_coords = [
                 coord * img_w if i % 2 == 0 else coord * img_h
                 for i, coord in enumerate(coords)
             ]
 
-            if isinstance(annotation, RectangleAnnotation) and len(abs_coords) == 4:
+            if isinstance(annotation, RectangleAnnotation):
                 draw.rectangle(abs_coords, outline="red", width=3)
 
-            elif isinstance(annotation, EllipseAnnotation) or isinstance(annotation,CircleAnnotation) and len(abs_coords) == 4:
+            elif isinstance(annotation, (EllipseAnnotation, CircleAnnotation)):
                 draw.ellipse(abs_coords, outline="red", width=3)
 
-            elif isinstance(annotation, FreehandAnnotation) and len(abs_coords) >= 4:
+            elif isinstance(annotation, FreehandAnnotation):
                 points = list(zip(abs_coords[::2], abs_coords[1::2]))
                 draw.line(points, fill="red", width=2)
 
-            elif isinstance(annotation, PolygonAnnotation) and len(abs_coords) >= 6:
+            elif isinstance(annotation, PolygonAnnotation):
                 points = list(zip(abs_coords[::2], abs_coords[1::2]))
                 draw.polygon(points, outline="red")
 
-    # Save result
     try:
         image_copy.save(save_path)
         messagebox.showinfo("Saved", f"Annotated image saved to:\n{save_path}", parent=self.controller)
     except Exception as e:
         messagebox.showerror("Error", f"Failed to save image:\n{e}", parent=self.controller)
+
 

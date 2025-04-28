@@ -4,7 +4,6 @@ from tkinter import filedialog, messagebox,simpledialog
 import json
 import os
 from Utility.annotation_classes import *
-from Utility.util_mask_generator import generate_semantic_masks
 
 
 def show_listbox_menu(self, event):
@@ -22,7 +21,7 @@ def load_folder(self, event=None):
 
     if not selected_folder:
         messagebox.showinfo("Cancelled", "No folder selected. Keeping the current image set.")
-        return  # ❌ User cancelled, exit safely without wiping state
+        return
 
     self.input_folder = selected_folder
 
@@ -36,15 +35,24 @@ def load_folder(self, event=None):
         messagebox.showwarning("Warning", "No image files found in the selected folder.")
         return
 
-    # ✅ Only create folders if images are found
+    # Create required folder structure
     self.annotation_folder = os.path.join(self.input_folder, "annotations")
-    self.annotated_image_folder = os.path.join(self.input_folder, "annotated_images")
-    os.makedirs(self.annotation_folder, exist_ok=True)
+    self.annotated_image_folder = os.path.join(self.input_folder, "annotations", "Annotated_Images")
+
+    # Folders for each annotation format
+    formats = ["COCO", "YOLO", "PascalVOC", "Masks", "JSON"]
+    for fmt in formats:
+        os.makedirs(os.path.join(self.annotation_folder, fmt), exist_ok=True)
+
+    # Annotated Images folder
     os.makedirs(self.annotated_image_folder, exist_ok=True)
 
     self.current_image_index = 0
     self.load_image()
-   
+
+    messagebox.showinfo("Folder Structure Created", 
+                        f"Created annotation folders at:\n{self.annotation_folder}")
+
 def load_annotations(self, event=None):
     if not self.image_files or self.current_image_index == -1:
         messagebox.showwarning("No Image", "No image is currently loaded.")
@@ -52,12 +60,16 @@ def load_annotations(self, event=None):
 
     current_image = self.image_files[self.current_image_index]
     image_name = os.path.basename(current_image)
-    annotations_file = os.path.normpath((os.path.join(self.annotation_folder, f"{os.path.splitext(image_name)[0]}_annotations.json")))
-    print(f"[DEBUG] Looking for annotations at: {annotations_file}")
+    base_name = os.path.splitext(image_name)[0]
+    annotations_file = os.path.join(
+        self.annotation_folder, "JSON", f"{base_name}_annotations.json"
+    )
+
+    print(f"[DEBUG] Loading annotations from: {annotations_file}")
 
     if not os.path.exists(annotations_file):
         if messagebox.askquestion("Annotations Not Found",
-                                  f"No local annotations found for '{image_name}'.\nWould you like to import from COCO or YOLO?",
+                                  f"No local annotations found for '{image_name}'.\nWould you like to import from another format?",
                                   icon='question') != "yes":
             return
 
@@ -66,15 +78,15 @@ def load_annotations(self, event=None):
             return
 
         format_map = {
-            "coco": import_coco,
-            "yolo": import_yolo,
-            "pascal voc": import_pascal_voc,
-            "voc": import_pascal_voc
+            "coco": self.import_coco,
+            "yolo": self.import_yolo,
+            "pascal voc": self.import_pascal_voc,
+            "voc": self.import_pascal_voc
         }
 
         handler = format_map.get(format_choice.strip().lower())
         if handler:
-            handler(self)
+            handler()
         else:
             messagebox.showerror("Invalid Format", "Only 'COCO', 'YOLO', or 'Pascal VOC' supported for import.")
         return
@@ -93,18 +105,13 @@ def load_annotations(self, event=None):
     self.annotations.clear()
     img_w, img_h = self.image.width, self.image.height
 
-    def scale_coords(coords):
-        return [coords[i] * img_w if i % 2 == 0 else coords[i] * img_h for i in range(len(coords))]
-
     type_handlers = {
-        "Rectangle": lambda c: RectangleAnnotation(*scale_coords(c)),
-        "Ellipse": lambda c: EllipseAnnotation(*scale_coords(c)),
-        "Circle": lambda c: CircleAnnotation(*scale_coords(c)),
-        "Freehand": lambda c: FreehandAnnotation(scale_coords(c)),
-        "Polygon": lambda c: PolygonAnnotation(scale_coords(c)),
-        "Keypoint": lambda c: KeypointAnnotation([(x, y, v if len(k) > 2 else 2)
-                                                  for k in c if isinstance(k, (list, tuple)) and len(k) >= 2
-                                                  for x, y, *v in [k]])
+        "Rectangle": RectangleAnnotation,
+        "Ellipse": EllipseAnnotation,
+        "Circle": CircleAnnotation,
+        "Freehand": FreehandAnnotation,
+        "Polygon": PolygonAnnotation,
+        "Keypoint": lambda coords: KeypointAnnotation([(x, y, v) for x, y, v in coords])
     }
 
     for ann in data["annotations"]:
@@ -114,15 +121,29 @@ def load_annotations(self, event=None):
 
         if ann_type in type_handlers and coords:
             try:
-                annotation = type_handlers[ann_type](coords)
-                annotation.label = label
-                annotation.id = ann.get("id", "")
-                annotation.iscrowd = ann.get("iscrowd", 0)
-                self.annotations.append(annotation)
-            except Exception as e:
-                print(f"Skipping annotation due to error: {e}")
+                if ann_type == "Keypoint":
+                    annotation = type_handlers[ann_type](coords)
+                elif ann_type in ["Polygon", "Freehand"]:
+                    annotation = type_handlers[ann_type](coords)  # Pass coords as a single list
+                else:
+                    annotation = type_handlers[ann_type](*coords)
 
-    self.redraw_annotations()
+                annotation.label = label
+                annotation.id = ann.get("id", str(uuid.uuid4()))
+                annotation.iscrowd = ann.get("iscrowd", 0)
+                annotation.islocked = ann.get("islocked", False)
+                annotation.ismask = ann.get("ismask", False)
+
+                current_width = int(self.image.width * self.zoom_factor)
+                current_height = int(self.image.height * self.zoom_factor)
+
+                annotation.canvas_id = annotation.draw_annotation(self.canvas, current_width, current_height, "red")
+                self.annotations.append(annotation)
+                print(f"[DEBUG] Annotation imported: {annotation.annotation_type}, Label: {label}")
+            except Exception as e:
+                print(f"[ERROR] Skipping annotation due to error: {e}")
+
+    print(f"[INFO] Total annotations loaded: {len(self.annotations)}")
     self.update_annotation_listbox()
     messagebox.showinfo("Loaded", f"Annotations loaded from {annotations_file}")
 
@@ -231,11 +252,12 @@ def toggle_lock_annotation(self):
     index = self.selected_annotation_index
     if index is not None and index < len(self.annotations):
         annotation = self.annotations[index]
-        annotation.locked = not getattr(annotation, "locked", False)
-        status = "🔒 Locked" if annotation.locked else "🔓 Unlocked"
+        annotation.islocked = not getattr(annotation, "islocked", False)
+        status = "🔒 Locked" if annotation.islocked else "🔓 Unlocked"
         print(f"{status} annotation {index}")
         self.update_annotation_listbox()
-        
+        self.redraw_annotations()
+
 def import_yolo(self):
     folder = filedialog.askdirectory(title="Select YOLO Folder")
     if not folder:

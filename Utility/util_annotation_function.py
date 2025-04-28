@@ -16,7 +16,6 @@ def clamp_to_image_bounds(self, x, y):
     y = max(top, min(y, bottom))
     return x, y
 
-
 def is_within_image_bounds(self, annotation):
     """Check if an annotation is entirely within zoomed image bounds on canvas."""
     if not self.image:
@@ -64,7 +63,6 @@ def is_within_image_bounds(self, annotation):
         return True
 
     return False  # fallback for unsupported types
-
 
 def on_press(self, event):
     """Handles the start of an annotation."""
@@ -479,9 +477,12 @@ def update_annotation_listbox(self):
         # Add crowd flag if applicable
         if getattr(annotation, "iscrowd", 0):
             label += " [CROWD]"
+        
+        if getattr(annotation,"ismask",False):
+            label += "[MASK]"
 
         # Add locked flag if applicable
-        if getattr(annotation, "locked", False):
+        if getattr(annotation, "islocked", False):
             label += " [LOCKED]"
 
         self.annotation_listbox.insert(tk.END, label)
@@ -498,28 +499,32 @@ def on_annotation_selected(self, event):
     selected_index = selected_index[0]
     selected_annotation = self.annotations[selected_index]
 
-    # Reset all annotations to default color
+    # Step 1: Reset all annotations to their default colour
     for annotation in self.annotations:
-        if isinstance(annotation, FreehandAnnotation):
-            self.canvas.itemconfig(annotation.canvas_id, fill="red")
-        elif isinstance(annotation, KeypointAnnotation):
+        if isinstance(annotation, KeypointAnnotation):
             for dot_id in annotation.canvas_id or []:
-                self.canvas.itemconfig(dot_id, fill="green")  # Reset to default green
+                self.canvas.itemconfig(dot_id, fill="green")
+        elif isinstance(annotation, FreehandAnnotation):
+            color = "purple" if getattr(annotation, "ismask", False) else "red"
+            self.canvas.itemconfig(annotation.canvas_id, fill=color)
         elif isinstance(annotation, PolygonAnnotation):
-            self.canvas.itemconfig(annotation.canvas_id, outline="red")
+            color = "purple" if getattr(annotation, "ismask", False) else "red"
+            self.canvas.itemconfig(annotation.canvas_id, outline=color)
         else:
-            self.canvas.itemconfig(annotation.canvas_id, outline="red")
+            color = "grey" if getattr(annotation, "islocked", False) else "red"
+            self.canvas.itemconfig(annotation.canvas_id, outline=color)
 
-    # Highlight the selected annotation
-    if isinstance(selected_annotation, FreehandAnnotation):
-        self.canvas.itemconfig(selected_annotation.canvas_id, fill="blue")
-    elif isinstance(selected_annotation, KeypointAnnotation):
+    # Step 2: Now highlight the selected annotation
+    if isinstance(selected_annotation, KeypointAnnotation):
         for dot_id in selected_annotation.canvas_id or []:
-            self.canvas.itemconfig(dot_id, fill="blue")  # Highlight all keypoints in blue
+            self.canvas.itemconfig(dot_id, fill="blue")
+    elif isinstance(selected_annotation, FreehandAnnotation):
+        self.canvas.itemconfig(selected_annotation.canvas_id, fill="blue")
     elif isinstance(selected_annotation, PolygonAnnotation):
-        self.canvas.itemconfig(selected_annotation.canvas_id,fill="",outline="blue")
+        self.canvas.itemconfig(selected_annotation.canvas_id, outline="blue")
     else:
         self.canvas.itemconfig(selected_annotation.canvas_id, outline="blue")
+
 
 
 def change_annotation_type(self, event):
@@ -538,3 +543,21 @@ def toggle_crowd_label(self):
     print(f"🔁 Toggled iscrowd for annotation {index} → {annotation.iscrowd}")
 
     self.update_annotation_listbox()
+
+def toggle_mask_annotation(self):
+    index = self.selected_annotation_index
+    if index is None or index >= len(self.annotations):
+        return
+
+    annotation = self.annotations[index]
+
+    # Only allow for Polygon or Freehand
+    if isinstance(annotation, (PolygonAnnotation, FreehandAnnotation)):
+        annotation.ismask = not getattr(annotation, "ismask", False)  # Toggle it
+        status = "✅ Marked as Mask" if annotation.ismask else "❌ Unmarked as Mask"
+        print(f"{status} for annotation {index}")
+
+        self.update_annotation_listbox()
+        self.redraw_annotations()
+    else:
+        tk.messagebox.showwarning("Invalid Type", "Only Polygon or Freehand annotations can be used as masks.")

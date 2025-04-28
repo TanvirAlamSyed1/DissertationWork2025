@@ -28,8 +28,8 @@ class HelpPage(tk.Frame):
         ✏️ ANNOTATION TOOLS
         - Rectangle: Draw bounding boxes.
         - Ellipse: Draw elliptical annotations.
-        - Polygon: Click to create points, press D when done.
-        - Freehand: Hold and draw like a pen (used for masks).
+        - Polygon: Click to create points, press D when done (also used for semantic segmentation masks).
+        - Freehand: Hold and draw like a pen (also used for semantic segmentation masks).
         - Keypoints: Place landmarks on the image, press D when done
 
         Use the left toolbar to switch tools.
@@ -46,7 +46,7 @@ class HelpPage(tk.Frame):
         - COCO: Object detection + segmentation (polygon)
         - YOLO: Object detection (bounding boxes)
         - Pascal VOC: XML-based format
-        - Mask: PNG mask images for segmentation, this is created using the freehand drawings
+        - Mask: PNG mask images for segmentation, created using Freehand drawings or Polygons.
         - JSON: Raw full annotation backup
 
         Use 'Download All Annotations' to export.
@@ -55,18 +55,14 @@ class HelpPage(tk.Frame):
 
         📖 Keyboard Shortcuts
 
-        Ctrl + O  - Open Image
-        Ctrl + S  - Save Annotations
-        Ctrl + E  - Export Annotations
+        Ctrl + F  - Load Folder
+        Ctrl + L  - Import Annotations        
+        Ctrl + S  - Export Annotations
         Ctrl + Z  - Undo
         Ctrl + Y  - Redo
         Ctrl + D  - Finalize Polygon/Keypoints
-        Ctrl + F  - Freehand Tool
-        Ctrl + L  - Lock/Unlock Annotation
         Ctrl + P  - Previous Image
         Ctrl + N  - Next Image
-        Delete    - Delete Selected Annotation
-        Esc       - Cancel Current Tool / Annotation
 
         ---
 

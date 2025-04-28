@@ -1,11 +1,12 @@
 # Utility/util_export_functions.py
 import json
 import os
+import datetime
+from PIL import Image, ImageDraw
 from Utility.annotation_classes import *
 from tkinter import messagebox, simpledialog,filedialog
 import xml.etree.ElementTree as ET
 import tkinter.filedialog as fd
-from Utility.util_mask_generator import generate_semantic_masks
 import math
 
 def save_annotations(self, event=None):
@@ -22,8 +23,22 @@ def save_annotations(self, event=None):
     image_name = os.path.basename(image_file)
     base_name = os.path.splitext(image_name)[0]
 
-    os.makedirs(self.annotation_folder, exist_ok=True)
-    os.makedirs(self.annotated_image_folder, exist_ok=True)
+    annotation_subfolders = {
+        "json": "JSON",
+        "coco": "COCO",
+        "yolo": "YOLO",
+        "voc": "PascalVOC",
+        "pascal": "PascalVOC",
+        "pascalvoc": "PascalVOC",
+        "mask": "Masks"
+    }
+
+    if format not in annotation_subfolders:
+        messagebox.showerror("Invalid Format", f"Format '{format}' is not supported.")
+        return
+
+    target_folder = os.path.join(self.annotation_folder, annotation_subfolders[format])
+    os.makedirs(target_folder, exist_ok=True)
 
     annotations_data = {
         "image_name": image_name,
@@ -32,61 +47,33 @@ def save_annotations(self, event=None):
         "annotations": [ann.to_dict(self.image.width, self.image.height) for ann in self.annotations],
     }
 
-
     try:
         if format == "json":
-            messagebox.showinfo(
-                "JSON Format",
-                "JSON format will include all annotation types as-is. Ensure that your annotations are compatible with your intended use."
-            )
-            path = os.path.join(self.annotation_folder, f"{base_name}_annotations.json")
+            path = os.path.join(target_folder, f"{base_name}_annotations.json")
             with open(path, "w") as f:
                 json.dump(annotations_data, f, indent=4)
-            messagebox.showinfo("Saved", f"Saved as JSON: {path}")
+            messagebox.showinfo("Saved", f"Annotations saved as JSON:\n{path}")
 
         elif format == "coco":
-            messagebox.showinfo(
-                "COCO Format",
-                "COCO format supports bounding boxes, polygons, and keypoints. Ensure that your annotations are compatible with these types."
-            )
-            path = os.path.join(self.annotation_folder, f"{base_name}_coco.json")
+            path = os.path.join(target_folder, f"{base_name}_coco.json")
             export_to_coco([annotations_data], path)
-            messagebox.showinfo("Saved", f"Saved as COCO JSON: {path}")
+            messagebox.showinfo("Saved", f"Annotations saved in COCO format:\n{path}")
 
         elif format == "yolo":
-            messagebox.showwarning(
-                "YOLO Format Limitation",
-                "YOLO format supports only rectangular bounding boxes. Annotations like polygons, keypoints, and masks will not be included in the export."
-            )
-            yolo_folder = os.path.join(self.annotation_folder, f"{base_name}_yolo")
-            export_to_yolo([annotations_data], yolo_folder)
-            messagebox.showinfo("Saved", f"Saved as YOLO TXT in: {yolo_folder}")
+            export_to_yolo([annotations_data], target_folder)
+            messagebox.showinfo("Saved", f"Annotations saved in YOLO format:\n{target_folder}")
 
         elif format in ["voc", "pascal", "pascalvoc"]:
-            messagebox.showwarning(
-                "Pascal VOC Format Limitation",
-                "Pascal VOC format supports only rectangular bounding boxes. Annotations like polygons, keypoints, and masks will not be included in the export."
-            )
-            voc_folder = os.path.join(self.annotation_folder, f"{base_name}_voc")
-            export_to_pascal_voc([annotations_data], voc_folder)
-            messagebox.showinfo("Saved", f"Saved as VOC XML in: {voc_folder}")
+            export_to_pascal_voc([annotations_data], target_folder)
+            messagebox.showinfo("Saved", f"Annotations saved in Pascal VOC format:\n{target_folder}")
 
         elif format == "mask":
-            messagebox.showwarning(
-                "Mask Format Limitation",
-                "Mask format supports only polygon annotations. Other annotation types will not be included in the export."
-            )
-            temp_path = os.path.join(self.annotation_folder, f"{base_name}_temp_coco.json")
-            export_to_coco([annotations_data], temp_path)
-            generate_semantic_masks(json.load(open(temp_path)), self.annotation_folder)
-            os.remove(temp_path)
-            messagebox.showinfo("Saved", f"Saved as PNG mask to: {self.annotation_folder}")
-
-        else:
-            messagebox.showerror("Invalid Format", f"Format '{format}' is not supported.")
+            generate_semantic_masks(self, target_folder)
+            messagebox.showinfo("Saved", f"Mask PNG saved to:\n{target_folder}")
 
     except Exception as e:
-        messagebox.showerror("Save Error", f"Error saving annotations: {e}")
+        messagebox.showerror("Save Error", f"Error saving annotations:\n{e}")
+
 
 def load_all_annotations(annotation_folder):
     all_data = []
@@ -137,9 +124,6 @@ def export_to_yolo(data, export_folder):
     with open(label_path, "w") as f:
         for label in sorted(label_map, key=lambda x: label_map[x]):
             f.write(f"{label}\n")
-
-
-
     
 def export_to_pascal_voc(data, export_folder):
     os.makedirs(export_folder, exist_ok=True)
@@ -308,6 +292,52 @@ def export_to_coco(data, export_folder):
 
     with open(export_folder, "w") as f:
         json.dump(coco_output, f, indent=4)
+
+def generate_semantic_masks(self,save_dir):
+    os.makedirs(save_dir, exist_ok=True)
+
+    if not hasattr(self, "annotations") or not self.annotations:
+        print("No annotations found.")
+        return
+
+    width, height = self.image.width, self.image.height
+    image_filename = self.image_files[self.current_image_index]
+    base_name = os.path.splitext(image_filename)[0]
+
+    mask = Image.new("L", (width, height), 0)
+    draw = ImageDraw.Draw(mask)
+
+    drawn_anything = False  # ⚡ NEW: track if any mask was actually drawn
+
+    # Loop through annotations
+    for ann in self.annotations:
+        if getattr(ann, "ismask", False):  # Only consider marked masks
+            coords = ann.coordinates
+
+            # Check if coordinates are normalized (0-1) or absolute
+            if all(0 <= x <= 1 for x in coords):
+                points = [
+                    (coords[i] * width if i % 2 == 0 else coords[i] * height)
+                    for i in range(len(coords))
+                ]
+            else:
+                points = coords  # Already absolute pixel coordinates
+
+            # Group points into (x, y) pairs
+            if len(points) >= 6:  # Must be at least 3 points
+                polygon = [(points[i], points[i + 1]) for i in range(0, len(points), 2)]
+                draw.polygon(polygon, fill=1)  # Fill mask area with white
+                drawn_anything = True
+            else:
+                print(f"Skipping annotation {ann.id}: not enough points.")
+
+    if drawn_anything:
+        timestamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+        out_path = os.path.join(save_dir, f"{base_name}_{timestamp}_mask.png")
+        mask.save(out_path)
+        print(f"✅ Mask generation successful: {out_path}")
+    else:
+        print("⚠️ No valid mask annotations found. No mask file created.")
 
 # Helper functions
 
