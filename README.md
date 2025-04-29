@@ -38,46 +38,76 @@ A cross-platform desktop application for annotating images with bounding boxes, 
 - 🖱️ Context menu for labeling, deleting, masking, locking
 - ✅ Bound-checking to prevent invalid annotations
 - 🔒 Local-only operation (offline, no admin rights needed)
+
 ---
+
 ## 📦 Installation
 
-1. clone this repo and install pillow - 'pip install pillow'
-2. run main.py and let the application run
-3. There is also a downloadable .exe file you can get from the dist folder ( Windows Only)
+```bash
+git clone <your-repo-link>
+pip install pillow
+python main.py
+```
+
+---
 
 ## 🛠️ How to Use
-1. Run app 'Python main.py'
-2. From the UI:
-   - Click "Load Folder" to select your image folder.
-   - Use the dropdown to select annotation type.
-   - Annotate directly on the canvas using your mouse.
-   - Save annotations with "Save Annotations" button.
-   - Export the annotated image using "Export Annotated Image".
 
-⌨️ Shortcuts
-- Action | Shortcut
-- Finalize polygon/keypoint | F
-- Undo | Ctrl + Z
-- Redo | Ctrl + Y
-- Save annotations | Ctrl + S
-- Load annotations | Ctrl + L
-- Next image | Ctrl + N
-- Previous image | Ctrl + P
-- Load image folder | Ctrl + F
+1. Launch with:
+   ```bash
+   python main.py
+   ```
+2. In the app:
+   - Click **"Load Folder"** to select images.
+   - Select an annotation type from the dropdown.
+   - Draw on the canvas.
+   - Save or export annotations.
 
-📸 Supported Formats
-- .jpg
-- .jpeg
-- .png
-- .gif
-- .bmp
+### ⌨️ Shortcuts
 
-✅ To-Do / Improvements
- - Semantic Segmentation
- - YOLO / COCO format export
+| Action                  | Shortcut   |
+|--------------------------|------------|
+| Finalize Polygon/Keypoints | Ctrl + D  |
+| Undo                     | Ctrl + Z   |
+| Redo                     | Ctrl + Y   |
+| Save annotations         | Ctrl + S   |
+| Load annotations         | Ctrl + L   |
+| Load folder              | Ctrl + F   |
+| Next image               | Ctrl + N   |
+| Previous image           | Ctrl + P   |
 
-👨‍💻 Author
-- Made with 💙 by Tanvir Alam Syed
-- Student ID: 21326844
-- Final Year Project @ Manchester Metropolitan University (2024–25)
-- Supervisor: Dr Indranath Chatterjee
+---
+
+## 📸 Supported Image Formats
+
+- `.jpg`
+- `.jpeg`
+- `.png`
+- `.gif`
+- `.bmp`
+
+---
+
+## ✅ Planned Improvements
+
+- [ ] Advanced Mask Editing (painting masks)
+- [ ] Inter-annotator Agreement Tracking
+- [ ] Assisted Annotation (AI suggestions)
+- [ ] Customizable Keyboard Shortcuts
+- [ ] Multi-language Support
+
+---
+
+## 👨‍💻 Author
+
+- **Tanvir Alam Syed**
+- Student ID: **21326844**
+- BSc (Hons) Computer Science
+- **Final Year Project** @ Manchester Metropolitan University (2024–2025)
+- Supervisor: **Dr. Indranath Chatterjee**
+
+---
+
+## 📜 Academic Notice
+
+This project was developed in full compliance with MMU academic integrity policies, without the use of generative AI.
