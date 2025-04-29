@@ -1,6 +1,8 @@
 # 🖍️ Image Annotation Tool
 
-A cross-platform desktop application for annotating images with bounding boxes, ellipses, polygons, freehand lines, and keypoints — built with **Python + Tkinter**.
+A cross-platform desktop application for annotating images with bounding boxes, ellipses, circles, freehand lines, polygons, semantic segmentation masks, and keypoints — built with **Python + Tkinter**.
+
+> Developed for the 6G6Z0019 Synoptic Project at **Manchester Metropolitan University (2024–2025)**.
 
 ---
 
@@ -10,26 +12,38 @@ A cross-platform desktop application for annotating images with bounding boxes, 
 - 🖼️ Annotate using:
   - Rectangles
   - Ellipses
+  - Circles
   - Freehand lines
   - Polygons
   - Keypoints
-- 💾 Save annotations per image (JSON)
-- 📷 Export annotated images (PNG)
-- 🔁 Undo/redo support
-- 🔍 Zoom in/out using mouse scroll
+  - Semantic Segmentation Masks
+- 💾 Save annotations per image (JSON format)
+- 📤 Export annotations in multiple formats:
+  - **COCO** (bounding boxes, segmentation, keypoints)
+  - **YOLO** (object detection)
+  - **Pascal VOC** (XML format)
+  - **Semantic Masks** (PNG images)
+- 🖌️ Export annotated images (PNG)
+- 🔁 Undo/redo actions
+- 🧹 Clear annotations
 - 🔎 Search by image name
-- 🎨 Color-coded visual feedback on canvas
-- ✅ Bound-checking ensures annotations stay inside image
-- 🧭 Keyboard shortcut to finalize annotations (`f`)
-- 💬 Context menu to label/delete annotations
-- 🙅 Option to turn off repeated confirmation messages
-
+- 🔄 Edit existing annotations (move, label, lock/unlock)
+- 🎨 Visual colour cues:
+  - Red = Standard annotation
+  - Grey = Locked annotation
+  - Blue = Selected annotation
+  - Purple = Semantic segmentation mask
+- 🔍 Smooth zooming with mouse scroll
+- ⌨️ Keyboard shortcuts for faster workflow
+- 🖱️ Context menu for labeling, deleting, masking, locking
+- ✅ Bound-checking to prevent invalid annotations
+- 🔒 Local-only operation (offline, no admin rights needed)
 ---
-
 ## 📦 Installation
 
 1. clone this repo and install pillow - 'pip install pillow'
 2. run main.py and let the application run
+3. There is also a downloadable .exe file you can get from the dist folder ( Windows Only)
 
 ## 🛠️ How to Use
 1. Run app 'Python main.py'
