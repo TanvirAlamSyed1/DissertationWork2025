@@ -4,3 +4,5 @@ images/
 # Ignore specific files
 tempCodeRunnerFile.py
 annotations.json
+build/
+main.spec
