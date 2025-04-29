@@ -14,69 +14,73 @@ class HelpPage(tk.Frame):
         text_widget = tk.Text(self, wrap="word", padx=10, pady=10)
         text_widget.pack(expand=True, fill="both")
 
-        help_text = """
-        📘 Welcome to the Image Annotation Tool!
+        help_content = """
+            ✨ Welcome to the Image Annotation Tool!
 
-        ---
+            ----------------------------
 
-        🔹 GETTING STARTED
-        - Use 'File > Load Images' to select a folder of images.
-        - Images will appear one by one for annotation.
+            🔹 GETTING STARTED
+            1. Click 'Load Folder' to select a folder containing your images.
+            2. Images will display one at a time for you to annotate.
 
-        ---
+            ----------------------------
 
-        ✏️ ANNOTATION TOOLS
-        - Rectangle: Draw bounding boxes.
-        - Ellipse: Draw elliptical annotations.
-        - Polygon: Click to create points, press D when done (also used for semantic segmentation masks).
-        - Freehand: Hold and draw like a pen (also used for semantic segmentation masks).
-        - Keypoints: Place landmarks on the image, press D when done
+            🖊️ ANNOTATION TOOLS (Left Toolbar)
+            - Rectangle: Draw boxes around objects.
+            - Ellipse: Draw elliptical shapes.
+            - Circle: Draw perfect circles.
+            - Polygon: Click points around a shape, press Ctrl+D when done.
+            - Freehand: Draw freely with the mouse.
+            - Keypoints: Mark important points, press Ctrl+D when done.
 
-        Use the left toolbar to switch tools.
+            **Tip:** Switch tools anytime from the 'Annotation Type' dropdown.
 
-        ---
+            ----------------------------
 
-        💾 SAVING & LOADING
-        - Annotations are saved automatically in a JSON format.
-        - You can reload them when reopening the image.
+            📂 SAVING & LOADING
+            - Save current annotations: Click 'Save Annotations'.
+            - Load previous annotations: Click 'Load Annotations'.
+            - When loading annotations, this application always priorities JSON. If you have an alternate format (COCO, YOLO ect), The application will give you the option to load it in.
+            - Export all annotations: Use 'Download All Annotations' and select the format you need.
+            - To save the annotated image as an image, use 'Export Annotated Image'
 
-        ---
+            ----------------------------
 
-        📤 EXPORT OPTIONS
-        - COCO: Object detection + segmentation (polygon)
-        - YOLO: Object detection (bounding boxes)
-        - Pascal VOC: XML-based format
-        - Mask: PNG mask images for segmentation, created using Freehand drawings or Polygons.
-        - JSON: Raw full annotation backup
+            📤 EXPORT FORMATS
+            - **COCO**: Object detection & segmentation
+            - **YOLO**: Object detection (bounding boxes)
+            - **Pascal VOC**: XML format for object detection
+            - **Masks**: Create semantic segmentation PNG masks
+            - **JSON**: Full annotation backup
 
-        Use 'Download All Annotations' to export.
+            ----------------------------
 
-        ---
+            📈 KEYBOARD SHORTCUTS
+            - Ctrl+F : Load image folder
+            - Ctrl+L : Load annotations
+            - Ctrl+S : Save/export annotations
+            - Ctrl+Z : Undo last action
+            - Ctrl+Y : Redo last undone action
+            - Ctrl+D : Finalize polygon or keypoints
+            - Ctrl+N : Next image
+            - Ctrl+P : Previous image
 
-        📖 Keyboard Shortcuts
+            ----------------------------
 
-        Ctrl + F  - Load Folder
-        Ctrl + L  - Import Annotations        
-        Ctrl + S  - Export Annotations
-        Ctrl + Z  - Undo
-        Ctrl + Y  - Redo
-        Ctrl + D  - Finalize Polygon/Keypoints
-        Ctrl + P  - Previous Image
-        Ctrl + N  - Next Image
+            🧐 USEFUL TIPS
+            - Right-click an annotation in the sidebar to rename, lock, or delete it.
+            - To turn your polygon or freehand drawing into a mask, right-click on the annotation in the listbox, and the option will appear. 
+            - Zoom in/out with mouse scroll.
+            - Undo/redo mistakes anytime.
+            - Use 'Edit Mode' to move annotations after creating them.
 
-        ---
+            ----------------------------
 
-        🧠 TIPS
-        - Right-click on canvas to delete the selected annotation.
-        - Use zoom controls at bottom to zoom in/out.
-        - Use undo/redo to correct mistakes.
-        - Use the annotation list (right sidebar) to navigate/edit annotations.
-
-        Enjoy annotating!
-        """
+            Enjoy using the tool!
+            """
 
         
-        text_widget.insert("1.0", help_text)
+        text_widget.insert("1.0", help_content)
         text_widget.config(state="disabled")
         # We use the switch_window_button in order to call the show_frame() method as a lambda function
         switch_window_button = tk.Button(

@@ -7,7 +7,7 @@ from Pages.MainScreen import MainPage
 from Pages.HelpScreen import HelpPage
 
 # Allowing us to extend from the Tk class
-class testClass(tk.Tk):
+class AnnotationApp(tk.Tk):
     def __init__(self, *args, **kwargs):
         tk.Tk.__init__(self, *args, **kwargs)
         # Adding a title to the window
@@ -53,5 +53,5 @@ class testClass(tk.Tk):
 
 
 if __name__ == "__main__":
-    testObj = testClass()
+    testObj = AnnotationApp()
     testObj.mainloop()
