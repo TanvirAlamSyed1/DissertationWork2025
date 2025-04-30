@@ -65,8 +65,6 @@ def load_annotations(self, event=None):
         self.annotation_folder, "JSON", f"{base_name}_annotations.json"
     )
 
-    print(f"[DEBUG] Loading annotations from: {annotations_file}")
-
     if not os.path.exists(annotations_file):
         if messagebox.askquestion("Annotations Not Found",
                                   f"No local annotations found for '{image_name}'.\nWould you like to import from another format?",
@@ -139,11 +137,9 @@ def load_annotations(self, event=None):
 
                 annotation.canvas_id = annotation.draw_annotation(self.canvas, current_width, current_height, "red")
                 self.annotations.append(annotation)
-                print(f"[DEBUG] Annotation imported: {annotation.annotation_type}, Label: {label}")
             except Exception as e:
-                print(f"[ERROR] Skipping annotation due to error: {e}")
+                messagebox.showerror(f"[ERROR] Skipping annotation due to error: {e}")
 
-    print(f"[INFO] Total annotations loaded: {len(self.annotations)}")
     self.update_annotation_listbox()
     messagebox.showinfo("Loaded", f"Annotations loaded from {annotations_file}")
 
@@ -254,7 +250,6 @@ def toggle_lock_annotation(self):
         annotation = self.annotations[index]
         annotation.islocked = not getattr(annotation, "islocked", False)
         status = "🔒 Locked" if annotation.islocked else "🔓 Unlocked"
-        print(f"{status} annotation {index}")
         self.update_annotation_listbox()
         self.redraw_annotations()
 
@@ -337,7 +332,7 @@ def import_pascal_voc(self):
             ann.label = label
             new_annotations.append(ann)
         except Exception as e:
-            print(f"Skipping bad annotation: {e}")
+            messagebox.showerror(f"Skipping bad annotation: {e}")
 
     self.annotations = new_annotations
     self.redraw_annotations()

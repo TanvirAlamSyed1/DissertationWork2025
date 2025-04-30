@@ -35,20 +35,19 @@ def load_image(self):
         self.image = Image.open(image_path)
 
         new_width, new_height = self.image.width, self.image.height
-        print("Loaded image size:", self.image.width, self.image.height)
         self.photo = ImageTk.PhotoImage(self.image)
 
-        # ✅ Completely clear canvas
+        # Completely clear canvas
         self.canvas.delete("all")
         self.canvas.config(width=new_width, height=new_height)
         self.canvas.config(scrollregion=(0, 0, new_width, new_height))
 
-        # ✅ Reset zoom and image placement
+        # Reset zoom and image placement
         self.zoom_factor = 1.0
         self.image_x = 0
         self.image_y = 0
 
-        # ✅ Reset state
+        # Reset state
         self.annotations.clear()
         self.keypoints.clear()
         self.keypoint_canvas_ids.clear()
@@ -61,10 +60,10 @@ def load_image(self):
         self.image_name_label.config(text=f"📷 Image: {image_filename}")
 
 
-        # ✅ Draw new image
+        #  Draw new image
         self.canvas.create_image(self.image_x, self.image_y, anchor=tk.NW, image=self.photo, tags="image")
 
-        # ✅ Clear listbox & UI
+        #  Clear listbox & UI
         self.update_annotation_listbox()
 
 

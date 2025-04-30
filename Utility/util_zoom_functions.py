@@ -23,7 +23,7 @@ def on_mouse_wheel(self, event):
     self.zoom_factor = max(self.zoom_factor * scale_factor, 1.0)
     self.update_image_size(focus_x, focus_y, scale_factor)
 
-    # ✅ Re-draw live keypoints AFTER zoom, don't finalize them
+    # Re-draw live keypoints AFTER zoom, don't finalize them
     if (self.current_annotation_type in [KeypointAnnotation, PolygonAnnotation] and (self.keypoints or self.polygon_points)):
         self.redraw_temp_annotations()
 
@@ -32,7 +32,7 @@ def redraw_temp_annotations(self):
     """Redraws in-progress keypoints and polygon using zoomed coords."""
     self.canvas.delete("temp_annotation")
 
-    # 🟢 Keypoints
+    #  Keypoints
     for x_img, y_img, v in self.keypoints:
         x_canvas = self.image_x + (x_img * self.zoom_factor)
         y_canvas = self.image_y + (y_img * self.zoom_factor)
@@ -42,7 +42,7 @@ def redraw_temp_annotations(self):
             fill="green", outline="", tags="temp_annotation"
         )
 
-    # 🔵 Polygon
+    #  Polygon
     if len(self.polygon_points) >= 4:
         scaled_points = [
             self.image_x + pt * self.zoom_factor if i % 2 == 0

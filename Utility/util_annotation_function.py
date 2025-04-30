@@ -83,11 +83,9 @@ def on_press(self, event):
         # Clamp for drawing bounds
         x_clamped, y_clamped = self.clamp_to_image_bounds(raw_x, raw_y)
 
-        # 🔥 Convert canvas position to raw image-space coordinates
+        # Convert canvas position to raw image-space coordinates
         x_img = (x_clamped - self.image_x) / self.zoom_factor
         y_img = (y_clamped - self.image_y) / self.zoom_factor
-
-        print(f"📌 Keypoint raw image coords: ({x_img:.2f}, {y_img:.2f})")
 
         self.keypoints.append((x_img, y_img, 2))
 
@@ -200,7 +198,7 @@ def on_release(self, event):
 
     self.canvas.delete("temp_annotation")
 
-    # 🛠 Convert from canvas coords to raw image coords
+    # Convert from canvas coords to raw image coords
     start_img_x = (self.start_x - self.image_x) / self.zoom_factor
     start_img_y = (self.start_y - self.image_y) / self.zoom_factor
     end_img_x = (end_x - self.image_x) / self.zoom_factor
@@ -208,7 +206,6 @@ def on_release(self, event):
 
     annotation = None
     canvas_id = None
-    print(start_img_x, start_img_y, end_img_x, end_img_y)
 
     if self.current_annotation_type == RectangleAnnotation:
         annotation = RectangleAnnotation(start_img_x, start_img_y, end_img_x, end_img_y)
@@ -251,11 +248,11 @@ def on_release(self, event):
 
 def finalise_polygon(self, event=None):
     if self.current_annotation_type != PolygonAnnotation:
-        print("❌ Not in Polygon mode.")
+        messagebox("❌ Not in Polygon mode.")
         return
 
     if len(self.polygon_points) < 6:
-        print("⚠️ Polygon needs at least 3 points.")
+        messagebox("⚠️ Polygon needs at least 3 points.")
         return
 
     annotation = PolygonAnnotation(self.polygon_points)
@@ -281,11 +278,8 @@ def finalise_polygon(self, event=None):
 
         self.annotations.append(annotation)
         self.update_annotation_listbox()
-        print("✅ Polygon finalized and added.")
 
-    else:
-        print("❌ Polygon out of bounds.")
-
+        
     if self.polygon_preview_id:
         self.canvas.delete(self.polygon_preview_id)
         self.polygon_preview_id = None
@@ -306,7 +300,7 @@ def finalise_keypoints(self, event=None):
         normalized_keypoints.append((x_norm, y_norm, v))
 
     annotation = KeypointAnnotation(normalized_keypoints)
-    print("✅ Saving normalized keypoints:", normalized_keypoints)
+
 
     if self.is_within_image_bounds(annotation):
         annotation.canvas_id = self.keypoint_canvas_ids.copy()
@@ -314,7 +308,7 @@ def finalise_keypoints(self, event=None):
         self.redraw_annotations()
         self.update_annotation_listbox()
     else:
-        print("❌ Keypoints out of bounds. Not added.")
+        messagebox("❌ Keypoints out of bounds. Not added.")
 
     for dot_id in self.keypoint_canvas_ids:
         self.canvas.itemconfig(dot_id, tags="annotation")
@@ -374,12 +368,12 @@ def delete_specific_annotation(self, event=None):
                 try:
                     self.canvas.delete(cid)
                 except Exception as e:
-                    print(f"Failed to delete canvas ID {cid}: {e}")
+                    messagebox(f"Failed to delete canvas ID {cid}: {e}")
         else:
             try:
                 self.canvas.delete(deleted_annotation.canvas_id)
             except Exception as e:
-                print(f"Failed to delete canvas ID {deleted_annotation.canvas_id}: {e}")
+                messagebox(f"Failed to delete canvas ID {deleted_annotation.canvas_id}: {e}")
 
         self.update_annotation_listbox()
 
@@ -396,8 +390,6 @@ def redo_annotation(self, event=None):
 def update_annotation_listbox(self):
     """Updates the Listbox with annotation types and labels."""
     self.annotation_listbox.delete(0, tk.END)
-
-    print("📋 Updating listbox...")  # Debug
 
     for index, annotation in enumerate(self.annotations):
         if annotation.annotation_type == "Keypoint":
@@ -469,7 +461,6 @@ def toggle_crowd_label(self):
 
     annotation = self.annotations[index]
     annotation.iscrowd = 1 if getattr(annotation, "iscrowd", 0) == 0 else 0  # toggle it
-    print(f"🔁 Toggled iscrowd for annotation {index} → {annotation.iscrowd}")
 
     self.update_annotation_listbox()
 
@@ -483,8 +474,6 @@ def toggle_mask_annotation(self):
     # Only allow for Polygon or Freehand
     if isinstance(annotation, (PolygonAnnotation, FreehandAnnotation)):
         annotation.ismask = not getattr(annotation, "ismask", False)  # Toggle it
-        status = "✅ Marked as Mask" if annotation.ismask else "❌ Unmarked as Mask"
-        print(f"{status} for annotation {index}")
 
         self.update_annotation_listbox()
         self.redraw_annotations()

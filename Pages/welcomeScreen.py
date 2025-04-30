@@ -14,7 +14,7 @@ class WelcomePage(tk.Frame):
         description = "This tool allows you to annotate any image.\nYou can load a folder of images and use various annotation types."
         desc_label = tk.Label(self, text=description, font=("Arial", 14))
         desc_label.pack(pady=20)
-        # We use the switch_window_button in order to call the show_frame() method as a lambda function
+        # switch_window_button in order to call the show_frame() method as a lambda function
         switch_window_button = tk.Button(
             self,
             text="Go to the Main Page",

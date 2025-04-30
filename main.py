@@ -38,7 +38,6 @@ class AnnotationApp(tk.Tk):
         frame = self.frames[cont]
         # raises the current frame to the top
         frame.tkraise()
-        print(f"Switched to frame: {cont.__name__}")  # Debug print
     
     def on_closing(self):
         # Check if any unsaved annotations

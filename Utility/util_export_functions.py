@@ -105,15 +105,13 @@ def export_to_yolo(data, export_folder):
             class_id = label_map.setdefault(label, len(label_map))
 
             x1, y1, x2, y2 = ann["coordinates"]
-            print(x1,y1,x2,y2)
 
             # 🔥 NEW: No scaling! Assume x1,y1,x2,y2 are normalized 0-1
             center_x = (x1 + x2) / 2
             center_y = (y1 + y2) / 2
             width = abs(x2 - x1)
             height = abs(y2 - y1)
-            print(center_x,center_y,width,height)
-
+        
             lines.append(f"{class_id} {center_x:.6f} {center_y:.6f} {width:.6f} {height:.6f}")
 
         with open(yolo_file, 'w') as f:
@@ -147,7 +145,6 @@ def export_to_pascal_voc(data, export_folder):
 
         for ann in entry["annotations"]:
             ann_type = ann["type"]
-            print(ann["coordinates"])
 
             if ann_type not in ["Rectangle", "Circle", "Ellipse"]:
                 skipped += 1
@@ -293,11 +290,11 @@ def export_to_coco(data, export_folder):
     with open(export_folder, "w") as f:
         json.dump(coco_output, f, indent=4)
 
-def generate_semantic_masks(self,save_dir):
+def generate_semantic_masks(self, save_dir):
     os.makedirs(save_dir, exist_ok=True)
 
     if not hasattr(self, "annotations") or not self.annotations:
-        print("No annotations found.")
+        messagebox.showerror("No Annotations", "No annotations found.")
         return
 
     width, height = self.image.width, self.image.height
@@ -307,37 +304,45 @@ def generate_semantic_masks(self,save_dir):
     mask = Image.new("L", (width, height), 0)
     draw = ImageDraw.Draw(mask)
 
-    drawn_anything = False  # ⚡ NEW: track if any mask was actually drawn
+    drawn_anything = False
 
-    # Loop through annotations
     for ann in self.annotations:
-        if getattr(ann, "ismask", False):  # Only consider marked masks
-            coords = ann.coordinates
+        if not getattr(ann, "ismask", False):
+            continue  # Skip if not marked as mask
 
-            # Check if coordinates are normalized (0-1) or absolute
+        if not isinstance(ann, (PolygonAnnotation, FreehandAnnotation)):
+            continue  # Skip unsupported types
+
+        coords = ann.coordinates
+
+        # Check if normalised
+        try:
             if all(0 <= x <= 1 for x in coords):
                 points = [
                     (coords[i] * width if i % 2 == 0 else coords[i] * height)
                     for i in range(len(coords))
                 ]
             else:
-                points = coords  # Already absolute pixel coordinates
+                points = coords
+        except Exception as e:
+            messagebox.showerror("Coordinate Error", f"Invalid coordinates in annotation {ann.id}: {e}")
+            continue
 
-            # Group points into (x, y) pairs
-            if len(points) >= 6:  # Must be at least 3 points
-                polygon = [(points[i], points[i + 1]) for i in range(0, len(points), 2)]
-                draw.polygon(polygon, fill=1)  # Fill mask area with white
-                drawn_anything = True
-            else:
-                print(f"Skipping annotation {ann.id}: not enough points.")
+        if len(points) >= 6:
+            polygon = [(points[i], points[i + 1]) for i in range(0, len(points), 2)]
+            draw.polygon(polygon, fill=1)
+            drawn_anything = True
+        else:
+            messagebox.showerror("Invalid Polygon", f"Skipping annotation {ann.id}: not enough points.")
 
     if drawn_anything:
         timestamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
         out_path = os.path.join(save_dir, f"{base_name}_{timestamp}_mask.png")
         mask.save(out_path)
-        print(f"✅ Mask generation successful: {out_path}")
+        messagebox.showinfo("Success", f"✅ Mask generated and saved to:\n{out_path}")
     else:
-        print("⚠️ No valid mask annotations found. No mask file created.")
+        messagebox.showerror("No Masks Created", "⚠️ No valid mask annotations found. No mask file created.")
+
 
 # Helper functions
 

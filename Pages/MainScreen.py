@@ -9,7 +9,6 @@ from Utility import (
     util_edit_mode
 )
 from Utility.annotation_classes import *
-
 class MainPage(tk.Frame):
     def __init__(self, parent, controller):
         super().__init__(parent)
@@ -51,7 +50,7 @@ class MainPage(tk.Frame):
 
         self.annotation_classes = {
             "View": NoneType,
-            "Rectangle": RectangleAnnotation,
+            "Bounding Box": RectangleAnnotation,
             "Ellipse": EllipseAnnotation,
             "Circle": CircleAnnotation,
             "Polygon": PolygonAnnotation,
@@ -175,7 +174,8 @@ class MainPage(tk.Frame):
             self.controller.show_frame(HelpPage)
         except (ImportError, AttributeError) as e:
             print(f"Error: {e}")
-
+    
+    #Functions from the utility folder that are pulled into this class
     def on_press(self, event): util_annotation_function.on_press(self, event)
     def on_drag(self, event): util_annotation_function.on_drag(self, event)
     def on_release(self, event): util_annotation_function.on_release(self, event)

@@ -40,7 +40,9 @@ class HelpPage(tk.Frame):
             📂 SAVING & LOADING
             - Save current annotations: Click 'Save Annotations'.
             - Load previous annotations: Click 'Load Annotations'.
-            - When loading annotations, this application always priorities JSON. If you have an alternate format (COCO, YOLO ect), The application will give you the option to load it in.
+            - When loading annotations, this application always priorities JSON.
+                If you have an alternate format (COCO, YOLO ect), 
+                the application will give you the option to load it in.
             - Export all annotations: Use 'Download All Annotations' and select the format you need.
             - To save the annotated image as an image, use 'Export Annotated Image'
 
@@ -69,7 +71,9 @@ class HelpPage(tk.Frame):
 
             🧐 USEFUL TIPS
             - Right-click an annotation in the sidebar to rename, lock, or delete it.
-            - To turn your polygon or freehand drawing into a mask, right-click on the annotation in the listbox, and the option will appear. 
+            - To turn your polygon or freehand drawing into a mask,
+                
+                right-click on the annotation in the listbox, and the option will appear. 
             - Zoom in/out with mouse scroll.
             - Undo/redo mistakes anytime.
             - Use 'Edit Mode' to move annotations after creating them.
@@ -82,7 +86,7 @@ class HelpPage(tk.Frame):
         
         text_widget.insert("1.0", help_content)
         text_widget.config(state="disabled")
-        # We use the switch_window_button in order to call the show_frame() method as a lambda function
+        # switch_window_button in order to call the show_frame() method as a lambda function
         switch_window_button = tk.Button(
             self,
             text="Go to the Main Page",

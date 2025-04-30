@@ -1,7 +1,7 @@
 import uuid
 
 class Annotation:
-    def __init__(self, annotation_type, coordinates):
+    def __init__(self, annotation_type, coordinates): #constructor and attributes
         self.id = str(uuid.uuid4())
         self.annotation_type = annotation_type
         self.coordinates = coordinates
@@ -10,7 +10,7 @@ class Annotation:
         self.iscrowd = 0  
         self.islocked = False
 
-    def to_dict(self, img_width=None, img_height=None, normalise=False):
+    def to_dict(self, img_width=None, img_height=None, normalise=False): #formats information nicely for export use
         coords = self.coordinates
         if normalise and img_width and img_height:
             coords = self.normalise_coordinates(img_width, img_height)
@@ -22,7 +22,6 @@ class Annotation:
             "label": self.label,
             "iscrowd": self.iscrowd,
         }
-
         # Only save optional attributes if they exist
         if hasattr(self, "islocked"):
             result["islocked"] = self.islocked
@@ -45,7 +44,7 @@ class Annotation:
         """Should be implemented by subclasses."""
         raise NotImplementedError
 
-class NoneType(Annotation):
+class NoneType(Annotation): #used as the view option for the tool
 
     def to_dict(self, img_width=None, img_height=None):
         """Should be implemented by subclasses."""
@@ -116,9 +115,6 @@ class CircleAnnotation(Annotation):
         x1, y1, x2, y2 = [self.coordinates[i] * (new_width if i % 2 == 0 else new_height) for i in range(4)]
         self.canvas_id = canvas.create_oval(x1, y1, x2, y2, outline= colour, tags="annotation")
         return self.canvas_id
-
-
-
 class FreehandAnnotation(Annotation):
     def __init__(self, points):
         super().__init__("Freehand", points)
@@ -153,8 +149,6 @@ class PolygonAnnotation(Annotation):
         scaled_points = [self.coordinates[i] * (new_width if i % 2 == 0 else new_height) for i in range(len(self.coordinates))]
         self.canvas_id = canvas.create_polygon(*scaled_points, outline=colour, fill='', tags="annotation")
         return self.canvas_id
-
-
 
 class KeypointAnnotation(Annotation):
     def __init__(self, keypoints):  # list of (x, y, visibility)

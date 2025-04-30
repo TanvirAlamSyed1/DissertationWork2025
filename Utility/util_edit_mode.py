@@ -28,8 +28,20 @@ def on_edit_press(self, event):
             if item in ids:
                 if getattr(annotation, "islocked", False):
                     return
+
                 self.selected_annotation = annotation
                 self.drag_start = (x, y)
+
+                # ✅ Highlight the selected annotation in blue
+                if isinstance(annotation.canvas_id, list):
+                    for cid in annotation.canvas_id:
+                        self.canvas.itemconfig(cid, fill="blue")
+                else:
+                    if isinstance(annotation, (FreehandAnnotation, KeypointAnnotation)):
+                        self.canvas.itemconfig(annotation.canvas_id, fill="blue")
+                    else:
+                        self.canvas.itemconfig(annotation.canvas_id, outline="blue")
+                
                 return
 
 def on_edit_drag(self, event):
@@ -102,11 +114,10 @@ def on_edit_release(self, event):
             if isinstance(self.selected_annotation, KeypointAnnotation):
                 self.canvas.itemconfig(self.selected_annotation.canvas_id, fill="blue")
             elif isinstance(self.selected_annotation, FreehandAnnotation):
-                self.canvas.itemconfig(self.selected_annotation.canvas_id, fill="red")
+                self.canvas.itemconfig(self.selected_annotation.canvas_id, fill="blue")
             elif isinstance(self.selected_annotation, PolygonAnnotation):
-                self.canvas.itemconfig(self.selected_annotation.canvas_id, outline="red")
+                self.canvas.itemconfig(self.selected_annotation.canvas_id, outline="blue")
             else:
-                self.canvas.itemconfig(self.selected_annotation.canvas_id, outline="red")
+                self.canvas.itemconfig(self.selected_annotation.canvas_id, outline="blue")
 
-    self.selected_annotation = None
     self.drag_start = None

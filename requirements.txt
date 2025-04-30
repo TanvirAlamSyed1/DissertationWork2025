@@ -1,0 +1,3 @@
+# Requires Python 3.10 or higher
+
+Pillow==10.2.0
