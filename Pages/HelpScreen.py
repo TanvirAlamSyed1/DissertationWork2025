@@ -29,9 +29,9 @@ class HelpPage(tk.Frame):
             - Rectangle: Draw boxes around objects.
             - Ellipse: Draw elliptical shapes.
             - Circle: Draw perfect circles.
-            - Polygon: Click points around a shape, press Ctrl+D when done.
+            - Polygon: Click points around a shape, press 'D' when done.
             - Freehand: Draw freely with the mouse.
-            - Keypoints: Mark important points, press Ctrl+D when done.
+            - Keypoints: Mark important points, press 'D' when done.
 
             **Tip:** Switch tools anytime from the 'Annotation Type' dropdown.
 
@@ -63,7 +63,7 @@ class HelpPage(tk.Frame):
             - Ctrl+S : Save/export annotations
             - Ctrl+Z : Undo last action
             - Ctrl+Y : Redo last undone action
-            - Ctrl+D : Finalize polygon or keypoints
+            - D : Finalize polygon or keypoints
             - Ctrl+N : Next image
             - Ctrl+P : Previous image
 
