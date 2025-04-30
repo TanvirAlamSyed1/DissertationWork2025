@@ -59,8 +59,9 @@ python main.py
    ```
 2. In the app:
    - Click **"Load Folder"** to select images.
+   - Recommended to read 'Help Page', located bottom right side, to understand how to use annotaitons.
    - Select an annotation type from the dropdown.
-   - Draw on the canvas.
+   - Draw on the canvas, with 'Key Points' and 'Polygon', you have to press " Control" + "D" on the keypad to be done.
    - Save or export annotations.
 
 ### ⌨️ Shortcuts
