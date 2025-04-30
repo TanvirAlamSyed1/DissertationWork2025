@@ -68,7 +68,7 @@ python main.py
 
 | Action                  | Shortcut   |
 |--------------------------|------------|
-| Finalize Polygon/Keypoints | Ctrl + D  |
+| Finalize Polygon/Keypoints | D  |
 | Undo                     | Ctrl + Z   |
 | Redo                     | Ctrl + Y   |
 | Save annotations         | Ctrl + S   |
