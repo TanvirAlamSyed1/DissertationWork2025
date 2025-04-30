@@ -14,7 +14,6 @@ def on_edit_press(self, event):
     clicked_items = self.canvas.find_overlapping(x, y, x, y)
 
     if not clicked_items:
-        print("❌ No canvas items under cursor.")
         return
 
     # Reverse order = topmost item first
@@ -27,15 +26,11 @@ def on_edit_press(self, event):
         for annotation in self.annotations:
             ids = annotation.canvas_id if isinstance(annotation.canvas_id, list) else [annotation.canvas_id]
             if item in ids:
-                if getattr(annotation, "locked", False):
-                    print("🔒 Locked annotation selected but not editable.")
+                if getattr(annotation, "islocked", False):
                     return
                 self.selected_annotation = annotation
                 self.drag_start = (x, y)
-                print(f"✅ Selected annotation: {annotation.annotation_type}")
                 return
-
-    print("⚠️ No matching annotation found under cursor.")
 
 def on_edit_drag(self, event):
     if not self.selected_annotation or not self.image:
@@ -97,17 +92,21 @@ def on_edit_drag(self, event):
         ann.coordinates = new_coords
         self.drag_start = (x_canvas, y_canvas)
         self.redraw_annotations()
-    else:
-        print("🚫 Move rejected: annotation would go out of bounds.")
 
 def on_edit_release(self, event):
     if self.selected_annotation:
-        # Restore default outline color
         if isinstance(self.selected_annotation.canvas_id, list):
             for cid in self.selected_annotation.canvas_id:
                 self.canvas.itemconfig(cid, outline="blue" if isinstance(self.selected_annotation, KeypointAnnotation) else "red")
         else:
-            self.canvas.itemconfig(self.selected_annotation.canvas_id, outline="red")
-        
+            if isinstance(self.selected_annotation, KeypointAnnotation):
+                self.canvas.itemconfig(self.selected_annotation.canvas_id, fill="blue")
+            elif isinstance(self.selected_annotation, FreehandAnnotation):
+                self.canvas.itemconfig(self.selected_annotation.canvas_id, fill="red")
+            elif isinstance(self.selected_annotation, PolygonAnnotation):
+                self.canvas.itemconfig(self.selected_annotation.canvas_id, outline="red")
+            else:
+                self.canvas.itemconfig(self.selected_annotation.canvas_id, outline="red")
+
     self.selected_annotation = None
     self.drag_start = None
