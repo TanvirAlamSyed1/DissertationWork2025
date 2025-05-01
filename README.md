@@ -42,11 +42,16 @@ A cross-platform desktop application for annotating images with bounding boxes, 
 ---
 
 ## 📦 Installation
+Make sure you have latest version of python downloaded
 
 ```bash
 git clone <your-repo-link>
 pip install pillow
 python main.py
+
+#if you want to install as a .exe file
+pip install pyinstaller
+pyinstaller --name AnnotationTool --onefile --windowed main.py
 ```
 
 ---
@@ -56,18 +61,20 @@ python main.py
 1. Launch with:
    ```bash
    python main.py
+   # or if you have the .exe file, just click the file!
    ```
 2. In the app:
    - Click **"Load Folder"** to select images.
+   - Recommended to read 'Help Page', located bottom right side, to understand how to use annotaitons.
    - Select an annotation type from the dropdown.
-   - Draw on the canvas.
+   - Draw on the canvas, with 'Key Points' and 'Polygon', you have to press " Control" + "D" on the keypad to be done.
    - Save or export annotations.
 
 ### ⌨️ Shortcuts
 
 | Action                  | Shortcut   |
 |--------------------------|------------|
-| Finalize Polygon/Keypoints | Ctrl + D  |
+| Finalize Polygon/Keypoints | D  |
 | Undo                     | Ctrl + Z   |
 | Redo                     | Ctrl + Y   |
 | Save annotations         | Ctrl + S   |
