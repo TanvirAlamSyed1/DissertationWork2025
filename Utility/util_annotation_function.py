@@ -248,11 +248,11 @@ def on_release(self, event):
 
 def finalise_polygon(self, event=None):
     if self.current_annotation_type != PolygonAnnotation:
-        messagebox("❌ Not in Polygon mode.")
+        print("❌ Not in Polygon mode.")
         return
 
-    if len(self.polygon_points) < 6:
-        messagebox("⚠️ Polygon needs at least 3 points.")
+    if len(self.polygon_points) < 3:
+        messagebox.showerror("Warning","⚠️ Polygon needs at least 3 points.")
         return
 
     annotation = PolygonAnnotation(self.polygon_points)
@@ -301,21 +301,23 @@ def finalise_keypoints(self, event=None):
 
     annotation = KeypointAnnotation(normalized_keypoints)
 
-
     if self.is_within_image_bounds(annotation):
+        # ✅ Tag each dot with "annotation" and store their IDs
+        for dot_id in self.keypoint_canvas_ids:
+            self.canvas.itemconfig(dot_id, tags="annotation")
+
         annotation.canvas_id = self.keypoint_canvas_ids.copy()
         self.annotations.append(annotation)
-        self.redraw_annotations()
         self.update_annotation_listbox()
+        self.redraw_annotations()
     else:
-        messagebox("❌ Keypoints out of bounds. Not added.")
+        messagebox.showwarning("Warning", "❌ Keypoints out of bounds. Not added.")
 
-    for dot_id in self.keypoint_canvas_ids:
-        self.canvas.itemconfig(dot_id, tags="annotation")
-    
-    self.canvas.delete("temp_annotation")
+    # ✅ Cleanup temporary storage
     self.keypoints = []
     self.keypoint_canvas_ids = []
+    self.canvas.delete("temp_annotation")
+
 
 def clear_annotation(self):
     """Clears all annotations, with a user confirmation."""
@@ -362,22 +364,42 @@ def delete_specific_annotation(self, event=None):
         deleted_annotation = self.annotations.pop(index)
         self.undone_annotations.append(deleted_annotation)
 
-        # 🔥 Properly delete from canvas
-        if isinstance(deleted_annotation.canvas_id, list):
-            for cid in deleted_annotation.canvas_id:
-                try:
-                    self.canvas.delete(cid)
-                except Exception as e:
-                    messagebox(f"Failed to delete canvas ID {cid}: {e}")
+        # ✅ Properly delete from canvas
+        if isinstance(deleted_annotation, KeypointAnnotation):
+            # 🔥 Each keypoint is an individual dot with its own canvas ID
+            if isinstance(deleted_annotation.canvas_id, list):
+                for cid in deleted_annotation.canvas_id:
+                    try:
+                        self.canvas.delete(cid)
+                    except Exception as e:
+                        print(f"Failed to delete keypoint canvas ID {cid}: {e}")
+            else:
+                print("Warning: keypoint canvas_id is not a list.")
+
         else:
-            try:
-                self.canvas.delete(deleted_annotation.canvas_id)
-            except Exception as e:
-                messagebox(f"Failed to delete canvas ID {deleted_annotation.canvas_id}: {e}")
+            # 🔥 Non-keypoint annotations
+            if isinstance(deleted_annotation.canvas_id, list):
+                for cid in deleted_annotation.canvas_id:
+                    try:
+                        self.canvas.delete(cid)
+                    except Exception as e:
+                        print(f"Failed to delete canvas ID {cid}: {e}")
+            else:
+                try:
+                    self.canvas.delete(deleted_annotation.canvas_id)
+                except Exception as e:
+                    print(f"Failed to delete canvas ID {deleted_annotation.canvas_id}: {e}")
+
+        # Clear references if still hanging around
+        if isinstance(deleted_annotation, KeypointAnnotation):
+            self.keypoints = []
+            self.keypoint_canvas_ids = []
 
         self.update_annotation_listbox()
 
     self.after(10, do_delete)
+
+
 
 def redo_annotation(self, event=None):
     """Redoes the last undone annotation."""
