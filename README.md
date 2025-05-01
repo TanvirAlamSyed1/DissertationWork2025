@@ -42,9 +42,11 @@ A cross-platform desktop application for annotating images with bounding boxes, 
 ---
 
 ## 📦 Installation
-Make sure you have latest version of python downloaded
-
+- Make sure you have latest version of python downloaded
+- Make Sure you download pip: https://pip.pypa.io/en/stable/installation/
+-In terminal, do the following:
 ```bash
+#get into an appropriate folder, then open the folder in a terminal and do the following commands
 git clone <your-repo-link>
 pip install pillow
 python main.py
