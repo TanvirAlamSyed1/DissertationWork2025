@@ -61,6 +61,7 @@ pyinstaller --name AnnotationTool --onefile --windowed main.py
 1. Launch with:
    ```bash
    python main.py
+   # or if you have the .exe file, just click the file!
    ```
 2. In the app:
    - Click **"Load Folder"** to select images.
