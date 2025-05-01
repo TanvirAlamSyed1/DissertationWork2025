@@ -42,11 +42,16 @@ A cross-platform desktop application for annotating images with bounding boxes, 
 ---
 
 ## 📦 Installation
+Make sure you have latest version of python downloaded
 
 ```bash
 git clone <your-repo-link>
 pip install pillow
 python main.py
+
+#if you want to install as a .exe file
+pip install pyinstaller
+pyinstaller --name AnnotationTool --onefile --windowed main.py
 ```
 
 ---
