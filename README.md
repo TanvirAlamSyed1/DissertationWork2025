@@ -42,7 +42,8 @@ A cross-platform desktop application for annotating images with bounding boxes, 
 ---
 
 ## 📦 Installation
-Make sure you have latest version of python downloaded
+- Make sure you have latest version of python downloaded
+- Make Sure you download pip: https://pip.pypa.io/en/stable/installation/
 
 ```bash
 git clone <your-repo-link>
