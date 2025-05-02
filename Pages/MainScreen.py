@@ -97,7 +97,6 @@ class MainPage(tk.Frame):
             ("Load Folder", self.load_folder),
             ("Load Annotations Of Current Image", self.load_annotation),
             ("Save Annotations Of Current Image", self.save_annotation),
-            ("Download All Annotations", self.download_annotations),
             ("Export Annotated Image",self.save_image)
         ]
         for text, cmd in buttons:
@@ -190,7 +189,6 @@ class MainPage(tk.Frame):
     def next_image(self,event=None): util_image_functions.next_image(self,event)
     def on_mouse_wheel(self, event): util_zoom_functions.on_mouse_wheel(self, event)
     def update_image_size(self, fx, fy, scale): util_zoom_functions.update_image_size(self, fx, fy, scale)
-    def download_annotations(self): util_import_functions.download_annotations(self)
     def save_annotation(self,event=None): util_export_functions.save_annotations(self,event)
     def change_annotation_type(self, event): util_annotation_function.change_annotation_type(self, event)
     def redraw_annotations(self): util_import_functions.redraw_annotations(self)
